@@ -1,0 +1,24 @@
+{
+  "name": "i45",
+  "version": "0.0.4",
+  "main": "./src/index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "xcopy src dist /s /y",
+    "checkin": "git add . && git commit -m \"See CHANGES.md for a list of Revisions.\" "
+  },
+  "keywords": [
+    "LocalStorage",
+    "SessionStorage",
+    "Cookie"
+  ],
+  "author": "cisguru",
+  "license": "MIT",
+  "description": "A wrapper for brower storage.",
+  "homepage": "",
+  "repository": {
+    "type": "git",
+    "url": ""
+  }
+}
