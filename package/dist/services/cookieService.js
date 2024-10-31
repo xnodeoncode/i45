@@ -15,6 +15,13 @@ export class CookieService {
    * CookieData|string: The value to be stored.
    ************************************************************************************/
   save(cookieName, cookieData) {
+
+    if(!this.storageAvailable())
+    {
+      console.log("CookieStore is not available.");
+      return;
+    }
+
     //TODO: validate size of cookie.
     // if it is too large, fall back to indexedDB and log a message.
     let day = 24 * 60 * 60 * 1000;
@@ -30,11 +37,11 @@ export class CookieService {
     try{
       cookieStore.set(cookie);
     } catch (error){
-      console.error("CookieStore is not supported in this browser.");
+      console.warn("CookieStore is not supported in this browser.");
       try {
         document.cookie = `${cookie.name}=${cookie.value}; expires=${new Date(cookie.expires).toUTCString()}`;
       } catch (error){
-        console.error("Cookie could not be saved.");
+        console.warn("Cookie could not be saved.");
     }
   }
   }
@@ -44,6 +51,13 @@ export class CookieService {
    * CookieName|string: The name of the cookie that will be retrieved.
    ************************************************************************************/
   retrieve(cookieName) {
+
+    if(!this.storageAvailable())
+      {
+        console.log("CookieStore is not available.");
+        return;
+      }
+      
     let item = null;
     let cookieData = document.cookie
       .split("; ")
@@ -61,4 +75,12 @@ export class CookieService {
    * CookieName|string: The name of the cookie tha will be deleted.
    ************************************************************************************/
   remove(cookieName) {}
+
+  storageAvailable(){
+    if (!("cookieStore" in window)) {
+      console.log("Not supported");
+      return;
+    }
+  }
+  
 }
