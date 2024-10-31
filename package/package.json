@@ -8,6 +8,11 @@
     "build": "cp -r src dist",
     "checkin": "git add . && git commit -a -m \"See CHANGES.md for a list of Revisions.\" "
   },
+  "files": [
+    "dist/index.js",
+    "package.json",
+    "README.md"
+  ],
   "keywords": [
     "LocalStorage",
     "SessionStorage",
