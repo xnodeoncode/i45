@@ -1,3 +1,3 @@
-import sayHello from "sayHello";
+var i45 = require('i45');
 
-console.log(sayHello("john")); // Hello john
+console.log(i45("john")); // Hello john
