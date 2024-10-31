@@ -1,3 +1,3 @@
-import {sayHello as i45} from './sayHello';
+import sayHello from "sayHello";
 
-console.log(i45.sayHello());
+console.log(sayHello("john")); // Hello john
