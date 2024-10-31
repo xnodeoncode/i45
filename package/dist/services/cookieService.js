@@ -23,7 +23,20 @@ export class CookieService {
       value: `${cookieData}`,
       expires: Date.now() + day,
     };
-    cookieStore.set(cookie);
+    if(cookieData.length > 4096){
+      console.warn("Cookie size is too large. Consider using indexedDB instead.");
+    }
+
+    try{
+      cookieStore.set(cookie);
+    } catch (error){
+      console.error("CookieStore is not supported in this browser.");
+      try {
+        document.cookie = `${cookie.name}=${cookie.value}; expires=${new Date(cookie.expires).toUTCString()}`;
+      } catch (error){
+        console.error("Cookie could not be saved.");
+    }
+  }
   }
 
   /************************************************************************************
