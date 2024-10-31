@@ -23,6 +23,9 @@ import { CookieService } from "./services/cookieService.js";
  ************************************************************************************/
 import { StorageItem } from "./models/storageItem.js";
 
+
+export { DatabaseSettings } from "./models/databaseSettings.js";
+
 /*************************************************************************************
  * PeristenceTypes provides a strongly typed interface to the types of persistence
  * services that are available to the application.
