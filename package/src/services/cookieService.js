@@ -7,7 +7,10 @@ import { StorageItem } from "../models/storageItem.js";
  * Wrapper class used to work with document.cookie.
  ************************************************************************************/
 export class CookieService {
-  constructor() {}
+  constructor() {
+    this._storageAvailable = this.storageAvailable("cookieStore");
+
+  }
 
   /************************************************************************************
    * Creates/updates a document cookie.
@@ -16,7 +19,7 @@ export class CookieService {
    ************************************************************************************/
   save(cookieName, cookieData) {
 
-    if(!this.storageAvailable())
+    if(!this._storageAvailable)
     {
       console.log("CookieStore is not available.");
       return;
@@ -52,7 +55,7 @@ export class CookieService {
    ************************************************************************************/
   retrieve(cookieName) {
 
-    if(!this.storageAvailable())
+    if(!this._storageAvailable)
       {
         console.log("CookieStore is not available.");
         return;
@@ -76,10 +79,37 @@ export class CookieService {
    ************************************************************************************/
   remove(cookieName) {}
 
-  storageAvailable(){
-    if (!("cookieStore" in window)) {
-      console.log("Not supported");
-      return;
+  /***********************************************************************************
+   * Checks for window.localStorage or window.sessionStorage.
+   * Type|string: The name of the storage type being tested.
+   * Reference:
+   * Storage avaialability test taken from MDN Web Docs
+   * https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API/Using_the_Web_Storage_API
+   ***********************************************************************************/
+  storageAvailable(type) {
+    let storage;
+    try {
+      storage = window[type];
+      const x = "__storage_test__";
+      storage.set(x, x);
+      storage.delete(x);
+      return true;
+    } catch (e) {
+      return (
+        e instanceof DOMException &&
+        // everything except Firefox
+        (e.code === 22 ||
+          // Firefox
+          e.code === 1014 ||
+          // test name field too, because code might not be present
+          // everything except Firefox
+          e.name === "QuotaExceededError" ||
+          // Firefox
+          e.name === "NS_ERROR_DOM_QUOTA_REACHED") &&
+        // acknowledge QuotaExceededError only if there's something already stored
+        storage &&
+        storage.length !== 0
+      );
     }
   }
   
