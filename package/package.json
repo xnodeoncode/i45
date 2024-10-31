@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "cp -r src dist",
-    "checkin": "git add . && git commit -m \"See CHANGES.md for a list of Revisions.\" "
+    "checkin": "git add . && git commit -a -m \"See CHANGES.md for a list of Revisions.\" "
   },
   "keywords": [
     "LocalStorage",
