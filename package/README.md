@@ -1,6 +1,6 @@
 # i45
 
-NodeJS package: https://www.npmjs.com/package/i45
+[NodeJS package](https://www.npmjs.com/package/i45)
 
 A wrapper for browser storage.
 
