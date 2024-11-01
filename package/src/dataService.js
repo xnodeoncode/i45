@@ -31,7 +31,7 @@ export { DatabaseSettings } from "./models/databaseSettings.js";
  * services that are available to the application.
  ************************************************************************************/
 export const PersistenceTypes = {
-  Cookie: "cookieStore",
+  CookieStore: "cookieStore",
   SessionStorage: "sessionStorage",
   LocalStorage: "localStorage",
 };
@@ -71,7 +71,7 @@ export class DataContext {
 
     switch (this._persistenceType) {
       //retrieve from cookie service
-      case PersistenceTypes.Cookie:
+      case PersistenceTypes.CookieStore:
         let cookieService = new CookieService();
         storageItem = cookieService.retrieve(this._objectStoreName);
         if (storageItem != null) data = JSON.parse(storageItem.Value);
@@ -107,7 +107,7 @@ export class DataContext {
 
     switch (databaseProperties.persistenceType) {
       //retrieve from cookie service
-      case PersistenceTypes.Cookie:
+      case PersistenceTypes.CookieStore:
         let cookieService = new CookieService();
         storageItem = cookieService.retrieve(databaseProperties.objectStoreName);
         if (storageItem != null) data = JSON.parse(storageItem.Value);
@@ -145,7 +145,7 @@ export class DataContext {
   async persist(items) {
     switch (this._persistenceType) {
       //persist to Cookie service
-      case PersistenceTypes.Cookie:
+      case PersistenceTypes.CookieStore:
         let cookieService = new CookieService();
         let cookieData = JSON.stringify(items);
         cookieService.save(this._objectStoreName, cookieData);
@@ -176,7 +176,7 @@ export class DataContext {
   async persist(databaseProperties, items) {
     switch (databaseProperties.persistenceType) {
       //persist to Cookie service
-      case PersistenceTypes.Cookie:
+      case PersistenceTypes.CookieStore:
         let cookieService = new CookieService();
         let cookieData = JSON.stringify(items);
         cookieService.save(databaseProperties.objectStoreName, cookieData);
