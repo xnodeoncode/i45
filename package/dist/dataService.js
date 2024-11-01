@@ -31,9 +31,9 @@ export { DatabaseSettings } from "./models/databaseSettings.js";
  * services that are available to the application.
  ************************************************************************************/
 export const PersistenceTypes = {
-  Cookie: "cookie",
-  SessionStorage: "session",
-  LocalStorage: "localstorage",
+  Cookie: "cookieStore",
+  SessionStorage: "sessionStorage",
+  LocalStorage: "localStorage",
 };
 
 /*************************************************************************************
