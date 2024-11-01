@@ -1,12 +1,13 @@
 {
   "name": "i45",
-  "version": "0.0.0-alpha.11",
+  "version": "0.0.0-alpha.13",
   "main": "./dist/dataService.js",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "cp -a src/. dist/",
-    "checkin": "git add . && git commit -a -m \"See CHANGES.md for a list of Revisions.\" "
+    "checkin": "git add . && git commit -a -m \"See CHANGES.md for a list of Revisions.\" ",
+    "patch": "npm version prerelease --preid=alpha"
   },
   "keywords": [
     "LocalStorage",
