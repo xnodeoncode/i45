@@ -26,7 +26,7 @@ npm i i45
 
   // create an array of objects. This is a sample collection of books
   var book = {"title":"The Cat in the Hat", "author":"Dr. Seus", "id":123456};
-  var bookTwo = {"title":"ONE MEAN ANT WITH FLY AND FLEA", "author":"Arthur Yorinks", "id":123457};
+  var bookTwo = {"title":"One Mean Ant with Fly and Flea", "author":"Arthur Yorinks", "id":123457};
 
   var books = [];
   books.push(book);
