@@ -73,7 +73,7 @@ export class DataContext {
       //retrieve from cookie service
       case PersistenceTypes.Cookie:
         let cookieService = new CookieService();
-        storageItem = cookieService.retrieve(this._databaseName);
+        storageItem = cookieService.retrieve(this._objectStoreName);
         if (storageItem != null) data = JSON.parse(storageItem.Value);
         break;
 
@@ -109,7 +109,7 @@ export class DataContext {
       //retrieve from cookie service
       case PersistenceTypes.Cookie:
         let cookieService = new CookieService();
-        storageItem = cookieService.retrieve(databaseProperties.databaseName);
+        storageItem = cookieService.retrieve(databaseProperties.objectStoreName);
         if (storageItem != null) data = JSON.parse(storageItem.Value);
         break;
 
@@ -148,7 +148,7 @@ export class DataContext {
       case PersistenceTypes.Cookie:
         let cookieService = new CookieService();
         let cookieData = JSON.stringify(items);
-        cookieService.save(this._databaseName, cookieData);
+        cookieService.save(this._objectStoreName, cookieData);
         break;
 
       //persist to LocalStorage service
@@ -179,7 +179,7 @@ export class DataContext {
       case PersistenceTypes.Cookie:
         let cookieService = new CookieService();
         let cookieData = JSON.stringify(items);
-        cookieService.save(databaseProperties.databaseName, cookieData);
+        cookieService.save(databaseProperties.objectStoreName, cookieData);
         break;
 
       //persist to LocalStorage service
