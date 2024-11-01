@@ -9,12 +9,12 @@ function App() {
   var settings = new DatabaseSettings("myDatabase", 1, "myDatabaseTable", "id", PersistenceTypes.LocalStorage);
 
   var dataContext = new DataContext(settings.persistenceType, settings.databaseName, settings.databaseVersion, settings.objectStoreName, settings.keyPathField);
-  var book = {"title":"myBook", "author":"myAuthor", "id":123456};
-  var bookTwo = {"title":"myBookTwo", "author":"myAuthor, Jr.", "id":123457};
+  var book = {"title":"The Cat in the Hat", "author":"Dr. Seus", "id":123456};
+  var bookTwo = {"title":"One Mean Ant with Fly AND Flea", "author":"Arthur Yorinks", "id":123457};
 
   var books = [];
   books.push(book);
-books.push(bookTwo);  
+  books.push(bookTwo);  
   dataContext.persist(settings, books);
   
   console.log(dataContext.retrieve(settings));
