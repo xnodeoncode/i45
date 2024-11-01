@@ -6,12 +6,12 @@ import './App.css'
 
 function App() {
   const [count, setCount] = useState(0)
-  var settings = new DatabaseSettings("myDatabase", 1, "myDatabaseTable", "id", PersistenceTypes.Cookie);
+  var settings = new DatabaseSettings("myDatabase", 1, "myDatabaseTable", "id", PersistenceTypes.LocalStorage);
 
   var dataContext = new DataContext(settings.persistenceType, settings.databaseName, settings.databaseVersion, settings.objectStoreName, settings.keyPathField);
   var book = {"title":"myBook", "author":"myAuthor", "id":123456};
-var bookTwo = {"title":"myBookTwo", "author":"myAuthor, Jr.", "id":123457};
- console.log(dataContext);
+  var bookTwo = {"title":"myBookTwo", "author":"myAuthor, Jr.", "id":123457};
+
   var books = [];
   books.push(book);
 books.push(bookTwo);  
