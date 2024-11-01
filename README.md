@@ -25,8 +25,8 @@ npm i i45
   var dataContext = new DataContext(settings.persistenceType, settings.databaseName, settings.databaseVersion, settings.objectStoreName, settings.keyPathField);
 
   // create an array of objects. This is a sample collection of books
-  var book = {"title":"The Cat in the Hat", "author":"Dr. Seus", "id":123456};
-  var bookTwo = {"title":"One Mean Ant with Fly and Flea", "author":"Arthur Yorinks", "id":123457};
+  var book = {"title":"The Road to React", "author":"Robin Wieruch", "id":123456};
+  var bookTwo = {"title":"Creating NPM Package", "author":"Oluwatobi Sofela", "id":123457};
 
   var books = [];
   books.push(book);
