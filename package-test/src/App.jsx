@@ -10,7 +10,7 @@ function App() {
 
   var dataContext = new DataContext(settings.persistenceType, settings.databaseName, settings.databaseVersion, settings.objectStoreName, settings.keyPathField);
   var book = {"title":"The Cat in the Hat", "author":"Dr. Seus", "id":123456};
-  var bookTwo = {"title":"One Mean Ant with Fly AND Flea", "author":"Arthur Yorinks", "id":123457};
+  var bookTwo = {"title":"One Mean Ant with Fly and Flea", "author":"Arthur Yorinks", "id":123457};
 
   var books = [];
   books.push(book);
