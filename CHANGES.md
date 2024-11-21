@@ -21,3 +21,11 @@
 
 - Updated README.md
 - Updated versioning to reflect alpha stage of development.
+
+
+## v0.0.0-alpha.15
+
+### November 21, 2024
+
+- Added default settings to reduce steps required to implement the data context.
+- Users can now implement browser storage in three lines of code.
