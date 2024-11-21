@@ -1,6 +1,6 @@
 # i45 Revisions
 
-## v alpha-0.0.4
+## v0.0.0-alpha.4
 
 ### October 3, 2024
 
@@ -8,20 +8,19 @@
 - Created NPM Package.
 - Linked package for testing.
 
-## v alpha-0.0.9
+## v0.0.0-alpha.9
 
 ### October 31, 2024
 
 - Cleaned up package files and directories.
 - Added test project.
 
-## v alpha-0.0.10
+## v0.0.0-alpha.10
 
 ### November 1, 2024
 
 - Updated README.md
 - Updated versioning to reflect alpha stage of development.
-
 
 ## v0.0.0-alpha.15
 
