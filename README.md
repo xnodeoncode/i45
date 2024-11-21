@@ -13,6 +13,30 @@ npm i i45
 
 ## Usage
 
+### Default Storage Settings
+
+``` javascript
+
+  import {DataContext } from 'i45';
+
+  // create an instance of the datacontext, the default storage location is Cookie storage, tableName/objectStoreName is used as the cookie name.
+  var dataContext = new DataContext();
+
+  // create an array of objects. This is a sample collection of books
+  var book = {"title":"The Road to React", "author":"Robin Wieruch", "id":123456};
+  var bookTwo = {"title":"Creating NPM Package", "author":"Oluwatobi Sofela", "id":123457};
+
+  var books = [];
+  books.push(book);
+  books.push(bookTwo);
+
+  // persist the collection to the datastore, passing in array of objects.
+  dataContext.persist(books);
+
+  ```
+
+### Custom Storage Settings
+
 ``` javascript
 
   import {DataContext, DatabaseSettings, PersistenceTypes } from 'i45';

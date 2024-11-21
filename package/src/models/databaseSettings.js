@@ -18,6 +18,6 @@ export class DatabaseSettings {
     this.databaseVersion = databaseVersion || 1;
     this.objectStoreName = tableName || "ItemStore";
     this.keyPathField = keyPathField || "id";
-    this.persistenceType = persistenceType || "cookie";
+    this.persistenceType = persistenceType || "cookieStore";
   }
 }

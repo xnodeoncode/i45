@@ -23,18 +23,16 @@ import { CookieService } from "./services/cookieService.js";
  ************************************************************************************/
 import { StorageItem } from "./models/storageItem.js";
 
+import { DatabaseSettings } from "./models/databaseSettings.js";
 
-export { DatabaseSettings } from "./models/databaseSettings.js";
+export { DatabaseSettings };
 
 /*************************************************************************************
  * PeristenceTypes provides a strongly typed interface to the types of persistence
  * services that are available to the application.
  ************************************************************************************/
-export const PersistenceTypes = {
-  CookieStore: "cookieStore",
-  SessionStorage: "sessionStorage",
-  LocalStorage: "localStorage",
-};
+import { PersistenceTypes } from "./models/persistenceTypes.js";
+export { PersistenceTypes };
 
 /*************************************************************************************
  * The DataContext class definition.
@@ -46,26 +44,47 @@ export const PersistenceTypes = {
  ************************************************************************************/
 export class DataContext {
   constructor(
-    persistenceType,
     databaseName,
     databaseVersion,
     objectStoreName,
-    keyPathField
+    keyPathField,
+    persistenceType
   ) {
-    this._persistenceType = persistenceType;
-    this._databaseName = databaseName;
-    this._databaseVersion = databaseVersion;
-    this._objectStoreName = objectStoreName;
-    this._keyPathField = keyPathField;
-    this._database = null;
-    this._items = [];
-    this._iterator = 0;
+    this._databaseDefaults = new DatabaseSettings(
+      (databaseName = "myDatabase"),
+      (databaseVersion = 1),
+      (objectStoreName = "myObjectStore"),
+      (keyPathField = "id"),
+      (persistenceType = PersistenceTypes.CookieStore)
+    );
+    this._databaseName = databaseName || this._databaseDefaults.databaseName;
+    this._databaseVersion =
+      databaseVersion || this._databaseDefaults.databaseVersion;
+    this._objectStoreName =
+      objectStoreName || this._databaseDefaults.objectStoreName;
+    this._keyPathField = keyPathField || this._databaseDefaults.keyPathField;
+    this._persistenceType =
+      persistenceType || this._databaseDefaults.persistenceType;
+  }
+
+  async retrieve(databaseProperties) {
+    let data = [];
+
+    if (arguments.length === 0) {
+      data = await this.retrieveItems();
+    } else if (
+      arguments.length === 1 &&
+      databaseProperties instanceof DatabaseSettings
+    ) {
+      data = await this.retrieveItemsWithProperties(databaseProperties);
+    }
+    return data;
   }
 
   /*************************************************************************************
    * Retrieves data from persistence layer and returns an array.
    ************************************************************************************/
-  async retrieve() {
+  async retrieveItems() {
     let data = [];
     let storageItem = new StorageItem();
 
@@ -101,7 +120,7 @@ export class DataContext {
    * Retrieves data from persistence store and returns an array.
    * DatabaseProperties: The database settings to be used when storing the items.
    ************************************************************************************/
-  async retrieve(databaseProperties) {
+  async retrieveItemsWithProperties(databaseProperties) {
     let data = [];
     let storageItem = new StorageItem();
 
@@ -109,7 +128,9 @@ export class DataContext {
       //retrieve from cookie service
       case PersistenceTypes.CookieStore:
         let cookieService = new CookieService();
-        storageItem = cookieService.retrieve(databaseProperties.objectStoreName);
+        storageItem = cookieService.retrieve(
+          databaseProperties.objectStoreName
+        );
         if (storageItem != null) data = JSON.parse(storageItem.Value);
         break;
 
@@ -138,11 +159,43 @@ export class DataContext {
     return data;
   }
 
+  async persist(databaseProperties, items) {
+    switch (arguments.length) {
+      case 1:
+        if (Array.isArray(arguments[0])) {
+          this.persistItems(arguments[0]);
+        } else {
+          console.error(
+            "Items must be an array of objects or values.",
+            arguments[0]
+          );
+        }
+        break;
+      case 2:
+        if (
+          Array.isArray(arguments[1]) &&
+          typeof arguments[0] === DatabaseSettings
+        ) {
+          this.persistItemsWithProperties(arguments[0], aruguements[1]);
+        } else {
+          console.error(
+            "Items must be an array of objects or values. DatabaseProperties must be an instance of DatabaseSettings."
+          );
+        }
+        break;
+      default:
+        console.warn(
+          "Invalid arguments. Please provide databaseProperties as an instance of DatabaseSettings and/or an array of items."
+        );
+        break;
+    }
+  }
+
   /*************************************************************************************
    * Saves items to the data store based on properties set in service initialization.
    * Items: The array of objects or values to be stored.
    ************************************************************************************/
-  async persist(items) {
+  async persistItems(items) {
     switch (this._persistenceType) {
       //persist to Cookie service
       case PersistenceTypes.CookieStore:
@@ -173,7 +226,7 @@ export class DataContext {
    * DatabaseProperties: The database settings to be used when storing the items.
    * Items: The array of objects or values to be stored.
    ************************************************************************************/
-  async persist(databaseProperties, items) {
+  async persistItemsWithProperties(databaseProperties, items) {
     switch (databaseProperties.persistenceType) {
       //persist to Cookie service
       case PersistenceTypes.CookieStore:
