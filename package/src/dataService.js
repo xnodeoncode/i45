@@ -23,48 +23,57 @@ import { CookieService } from "./services/cookieService.js";
  ************************************************************************************/
 import { StorageItem } from "./models/storageItem.js";
 
-import { DatabaseSettings } from "./models/databaseSettings.js";
+/**
+ * Import the DatabaseSettings class to provide strongly typed settings for the database.
+ * Import the PersistenceTypes enum to provide strongly typed values for the persistence types.
+ */
+import {
+  DatabaseSettings,
+  PersistenceTypes,
+} from "./models/databaseSettings.js";
 
-export { DatabaseSettings };
+/**
+ * Export the DatabaseSettings and PersistenceTypes classes for use with this datacontext in consuming modules.
+ */
+export { DatabaseSettings, PersistenceTypes };
 
-/*************************************************************************************
- * PeristenceTypes provides a strongly typed interface to the types of persistence
- * services that are available to the application.
- ************************************************************************************/
-import { PersistenceTypes } from "./models/persistenceTypes.js";
-export { PersistenceTypes };
-
-/*************************************************************************************
- * The DataContext class definition.
- * persistenceType: The persistenceType to be used for storage.
- * databaseName: The name for the database.
- * databaseVersion: The version of the database to be used.
- * objectStoreName: The name of the specific object store being used.
- * keyPathField: The object's field or property that will be used for key values.
- ************************************************************************************/
+/**
+ * @class DataContext
+ * @property {string} _databaseName - The name of the database.
+ * @property {int} _databaseVersion - The version of the database being used.
+ * @property {string} _tableName - The name of the table used to store data.
+ * @property {string} _primaryKeyField - The name of the field/property used to store key values.
+ * @property {string} _persistenceType - The type of persistence used to store data. (cookie, localStorage, sessionStorage)
+ * @property {DatabaseSettings} _databaseDefaults - The default settings for the database.
+ *
+ * @constructor
+ * @param {DatabaseSettings} databaseSettings - The settings to be used for the database.
+ *
+ * @example
+ * let settings = new DatabaseSettings("MyDatabase", 1, "MyTable", "id", PersistenceTypes.localStorage);
+ * let context = new DataContext(settings);
+ * console.log(context._databaseName); // "MyDatabase"
+ * console.log(context._databaseVersion); // 1
+ * console.log(context._tableName); // "MyTable"
+ * console.log(context._primaryKeyField); // "id"
+ * console.log(context._persistenceType); // "localStorage"
+ */
 export class DataContext {
-  constructor(
-    databaseName,
-    databaseVersion,
-    objectStoreName,
-    keyPathField,
-    persistenceType
-  ) {
-    this._databaseDefaults = new DatabaseSettings(
-      (databaseName = "myDatabase"),
-      (databaseVersion = 1),
-      (objectStoreName = "myObjectStore"),
-      (keyPathField = "id"),
-      (persistenceType = PersistenceTypes.CookieStore)
-    );
-    this._databaseName = databaseName || this._databaseDefaults.databaseName;
-    this._databaseVersion =
-      databaseVersion || this._databaseDefaults.databaseVersion;
-    this._objectStoreName =
-      objectStoreName || this._databaseDefaults.objectStoreName;
-    this._keyPathField = keyPathField || this._databaseDefaults.keyPathField;
-    this._persistenceType =
-      persistenceType || this._databaseDefaults.persistenceType;
+  constructor(databaseSettings) {
+    this._databaseDefaults = new DatabaseSettings();
+    if (databaseSettings instanceof DatabaseSettings) {
+      this._databaseName = databaseSettings.databaseName;
+      this._databaseVersion = databaseSettings.databaseVersion;
+      this._tableName = databaseSettings.tableName;
+      this._primaryKeyField = databaseSettings.primaryKeyField;
+      this._persistenceType = databaseSettings.persistenceType;
+    } else {
+      this._databaseName = this._databaseDefaults.databaseName;
+      this._databaseVersion = this._databaseDefaults.databaseVersion;
+      this._tableName = this._databaseDefaults.tableName;
+      this._primaryKeyField = this._databaseDefaults._primaryKeyField;
+      this._persistenceType = this._databaseDefaults.persistenceType;
+    }
   }
 
   async retrieve(databaseProperties) {
@@ -92,7 +101,7 @@ export class DataContext {
       //retrieve from cookie service
       case PersistenceTypes.CookieStore:
         let cookieService = new CookieService();
-        storageItem = cookieService.retrieve(this._objectStoreName);
+        storageItem = cookieService.retrieve(this._tableName);
         if (storageItem != null) data = JSON.parse(storageItem.Value);
         break;
 
@@ -128,9 +137,7 @@ export class DataContext {
       //retrieve from cookie service
       case PersistenceTypes.CookieStore:
         let cookieService = new CookieService();
-        storageItem = cookieService.retrieve(
-          databaseProperties.objectStoreName
-        );
+        storageItem = cookieService.retrieve(databaseProperties.tableName);
         if (storageItem != null) data = JSON.parse(storageItem.Value);
         break;
 
@@ -174,9 +181,9 @@ export class DataContext {
       case 2:
         if (
           Array.isArray(arguments[1]) &&
-          typeof arguments[0] === DatabaseSettings
+          arguments[0] instanceof DatabaseSettings
         ) {
-          this.persistItemsWithProperties(arguments[0], aruguements[1]);
+          this.persistItemsWithProperties(databaseProperties, items);
         } else {
           console.error(
             "Items must be an array of objects or values. DatabaseProperties must be an instance of DatabaseSettings."
@@ -201,19 +208,19 @@ export class DataContext {
       case PersistenceTypes.CookieStore:
         let cookieService = new CookieService();
         let cookieData = JSON.stringify(items);
-        cookieService.save(this._objectStoreName, cookieData);
+        cookieService.save(this._tableName, cookieData);
         break;
 
       //persist to LocalStorage service
       case PersistenceTypes.LocalStorage:
         var localStorageService = new LocalStorageService();
-        localStorageService.save(this._database, JSON.stringify(items));
+        localStorageService.save(this._databaseName, JSON.stringify(items));
         break;
 
       //persist to sessionStorage service
       case PersistenceTypes.SessionStorage:
         var sessionStorageService = new SessionStorageService();
-        sessionStorageService.save(this._database, JSON.stringify(items));
+        sessionStorageService.save(this._databaseName, JSON.stringify(items));
         break;
 
       default:
@@ -232,7 +239,7 @@ export class DataContext {
       case PersistenceTypes.CookieStore:
         let cookieService = new CookieService();
         let cookieData = JSON.stringify(items);
-        cookieService.save(databaseProperties.objectStoreName, cookieData);
+        cookieService.save(databaseProperties.tableName, cookieData);
         break;
 
       //persist to LocalStorage service
