@@ -4,22 +4,25 @@
   "main": "./dist/dataService.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "patch": "npm version prerelease --preid=alpha",
     "build": "cp -a src/. dist/",
-    "checkin": "git add . && git commit -a -m \"See CHANGES.md for a list of Revisions.\" ",
-    "patch": "npm version prerelease --preid=alpha"
+    "checkin": "git add . && git commit -a -m \"See CHANGES.md for a list of Revisions.\" "
   },
   "keywords": [
     "LocalStorage",
     "SessionStorage",
     "Cookie"
   ],
-  "author": "cisguru",
+  "author": "CIS Guru <cisguru@outlook.com>",
   "license": "MIT",
   "description": "A wrapper for brower storage.",
   "homepage": "https://github.com/xnodeoncode/i45",
   "repository": {
     "type": "git",
-    "url": "https://github.com/xnodeoncode/i45.git"
+    "url": "git+https://github.com/xnodeoncode/i45.git"
+  },
+  "devDependencies": {},
+  "bugs": {
+    "url": "https://github.com/xnodeoncode/i45/issues"
   }
 }
