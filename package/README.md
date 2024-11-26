@@ -73,7 +73,7 @@ dataContext.persist(settings, books);
 
 ### PersistenceTypes
 
-PersistenceTypes is an enum of the available storage options which currently are, Cookie, LocalStorage, and SessionStorage.
+PersistenceTypes is an enum of the available storage options which currently are, CookieStore, LocalStorage, and SessionStorage.
 
 #### Using PersistenceTypes
 
