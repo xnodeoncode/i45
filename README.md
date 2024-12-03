@@ -68,7 +68,7 @@ books.push(book);
 books.push(bookTwo);
 
 // persist the collection to the datastore, passing in the database settings and the collection.
-dataContext.persist(settings, books);
+dataContext.persist(books);
 ```
 
 ### PersistenceTypes

@@ -1,8 +1,14 @@
-/*************************************************************************************
- * StorageItem class to be used with various storage types.
- * Name|string: The name of the storage item.
- * Value|object: The value to be stored.
- ************************************************************************************/
+/**
+ * @class StorageItem
+ * @description StorageItem model
+ * @param {string} name - The name of the storage item.
+ * @param {string} value - The value of the storage item.
+ * @example
+ * const storageItem = new StorageItem("name", "value");
+ * console.log(storageItem.Name); // "name"
+ * console.log(storageItem.Value); // "value"
+ * @returns {StorageItem} A new StorageItem instance.
+ */
 export class StorageItem {
   constructor(name, value) {
     this.Name = name;
