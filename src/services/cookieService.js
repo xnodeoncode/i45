@@ -9,7 +9,6 @@ import { StorageItem } from "../models/storageItem.js";
 export class CookieService {
   constructor() {
     this._storageAvailable = this.storageAvailable("cookieStore");
-
   }
 
   /************************************************************************************
@@ -18,9 +17,7 @@ export class CookieService {
    * CookieData|string: The value to be stored.
    ************************************************************************************/
   save(cookieName, cookieData) {
-
-    if(!this._storageAvailable)
-    {
+    if (!this._storageAvailable) {
       console.log("CookieStore is not available.");
       return;
     }
@@ -33,20 +30,24 @@ export class CookieService {
       value: `${cookieData}`,
       expires: Date.now() + day,
     };
-    if(cookieData.length > 4096){
-      console.warn("Cookie size is too large. Consider using indexedDB instead.");
+    if (cookieData.length > 4096) {
+      console.warn(
+        "Cookie size is too large. Consider using indexedDB instead."
+      );
     }
 
-    try{
+    try {
       cookieStore.set(cookie);
-    } catch (error){
+    } catch (error) {
       console.warn("CookieStore is not supported in this browser.");
       try {
-        document.cookie = `${cookie.name}=${cookie.value}; expires=${new Date(cookie.expires).toUTCString()}`;
-      } catch (error){
+        document.cookie = `${cookie.name}=${cookie.value}; expires=${new Date(
+          cookie.expires
+        ).toUTCString()}`;
+      } catch (error) {
         console.warn("Cookie could not be saved.");
+      }
     }
-  }
   }
 
   /************************************************************************************
@@ -54,13 +55,11 @@ export class CookieService {
    * CookieName|string: The name of the cookie that will be retrieved.
    ************************************************************************************/
   retrieve(cookieName) {
+    if (!this._storageAvailable) {
+      console.log("CookieStore is not available.");
+      return;
+    }
 
-    if(!this._storageAvailable)
-      {
-        console.log("CookieStore is not available.");
-        return;
-      }
-      
     let item = null;
     let cookieData = document.cookie
       .split("; ")
@@ -77,7 +76,22 @@ export class CookieService {
    * Deletes a document cookie.
    * CookieName|string: The name of the cookie tha will be deleted.
    ************************************************************************************/
-  remove(cookieName) {}
+  remove(cookieName) {
+    if (!this._storageAvailable) {
+      console.log("CookieStore is not available.");
+      return;
+    }
+    try {
+      cookieStore.delete(cookieName);
+    } catch (e) {
+      console.warn("CookieStore is not supported in this browser.");
+      try {
+        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+      } catch (error) {
+        console.warn("Cookie could not be removed.");
+      }
+    }
+  }
 
   /***********************************************************************************
    * Checks for window.localStorage or window.sessionStorage.
@@ -112,5 +126,4 @@ export class CookieService {
       );
     }
   }
-  
 }

@@ -264,4 +264,76 @@ export class DataContext {
         break;
     }
   }
+
+  async clear(databaseSettings) {
+    switch (arguments.length) {
+      case 0:
+        this.removeItems();
+        break;
+      case 1:
+        if (databaseSettings instanceof DatabaseSettings) {
+          this.removeItemsWithProperties(databaseSettings);
+        } else {
+          console.error(
+            "DatabaseProperties must be an instance of DatabaseSettings."
+          );
+        }
+        break;
+      default:
+        console.warn(
+          "Invalid arguments. Please provide databaseProperties as an instance of DatabaseSettings."
+        );
+        break;
+    }
+  }
+
+  async removeItems() {
+    switch (this._persistenceType) {
+      //remove from Cookie service
+      case PersistenceTypes.CookieStore:
+        let cookieService = new CookieService();
+        cookieService.remove(this._tableName);
+        break;
+
+      //remove from LocalStorage service
+      case PersistenceTypes.LocalStorage:
+        var localStorageService = new LocalStorageService();
+        localStorageService.remove(this._databaseName);
+        break;
+
+      //remove from sessionStorage service
+      case PersistenceTypes.SessionStorage:
+        var sessionStorageService = new SessionStorageService();
+        sessionStorageService.remove(this._databaseName);
+        break;
+
+      default:
+        break;
+    }
+  }
+
+  async removeItemsWithProperties(databaseSettings) {
+    switch (databaseSettings.persistenceType) {
+      //remove from Cookie service
+      case PersistenceTypes.CookieStore:
+        let cookieService = new CookieService();
+        cookieService.remove(databaseSettings.tableName);
+        break;
+
+      //remove from LocalStorage service
+      case PersistenceTypes.LocalStorage:
+        var localStorageService = new LocalStorageService();
+        localStorageService.remove(databaseSettings.databaseName);
+        break;
+
+      //remove from sessionStorage service
+      case PersistenceTypes.SessionStorage:
+        var sessionStorageService = new SessionStorageService();
+        sessionStorageService.remove(databaseSettings.databaseName);
+        break;
+
+      default:
+        break;
+    }
+  }
 }

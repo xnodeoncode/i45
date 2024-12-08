@@ -36,3 +36,9 @@
 - NOTE: i45 versions v0.0.0-alpha.16 and later are _not_ compatible with versions v0.0.0-alpha.15 and earlier.
 - Upgrading to version v0.0.0-alpha.16 from any previous version could break existing code.
 - Update documentation.
+
+## v0.0.0-alpha-18
+
+### December 8, 2024
+
+- Added clear() method to data context to allow data removal.
