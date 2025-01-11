@@ -1,0 +1,15 @@
+/src
+/src/
+/src/*
+/src/**/*/
+
+src/
+src/*
+src/**/*/
+
+.git
+.git/*
+.git/**/*/
+
+
+.gitignore
