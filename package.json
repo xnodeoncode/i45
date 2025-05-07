@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "patch": "npm version prerelease --preid=alpha",
-    "build": "xcopy src\\* dist\\ /s /e",
+    "build-windows": "xcopy src\\* dist\\ /s /e",
+    "build-linux": "cp -r src/* dist/",
+    "build": "npm run build-linux && npm run build-windows",
     "checkin": "git add . && git commit -a -m \"See CHANGES.md for a list of Revisions.\" "
   },
   "keywords": [

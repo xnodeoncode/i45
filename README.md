@@ -119,8 +119,8 @@ books.push(book);
 books.push(bookTwo);
 
 // create an array of cities for the mapContext.
-var c1 = { id: 1, name: "Columbus", state: "Ohio", postalCode: "43065" };
-var c2 = { id: 2, name: "Atlanta", state: "Georgia", postalCode: "30303" };
+var c1 = { id: 1, name: "Seattle", state: "Washington", postalCode: "98109" };
+var c2 = { id: 2, name: "Bradfordsville", state: "Kentucky", postalCode: "40009" };
 
 var cities = [];
 cities.push(c1);
@@ -167,8 +167,8 @@ var mapSettings = new DatabaseSettings(
 );
 
 // create an array of cities.
-var c1 = { id: 1, name: "Columbus", state: "Ohio", postalCode: "43065" };
-var c2 = { id: 2, name: "Atlanta", state: "Georgia", postalCode: "30303" };
+var c1 = { id: 1, name: "Seattle", state: "Washington", postalCode: "98109" };
+var c2 = { id: 2, name: "Bradfordsville", state: "Kentucky", postalCode: "40009" };
 
 var cities = [];
 cities.push(c1);
@@ -201,8 +201,8 @@ var dataContext = new DataContext();
 
 // create an array of cities.
 var cities = [];
-cities.push({ id: 1, name: "Columbus", state: "Ohio", postalCode: "43065" });
-cities.push({ id: 2, name: "Atlanta", state: "Georgia", postalCode: "30303" });
+cities.push({ id: 1, name: "Seattle", state: "Washington", postalCode: "98109" });
+cities.push({ id: 2, name: "Bradfordsville", state: "Kentucky", postalCode: "40009" });
 
 // persist the collection
 dataContext.persist(cities);

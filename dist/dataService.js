@@ -39,12 +39,12 @@ export { DatabaseSettings, PersistenceTypes };
 
 /**
  * @class DataContext
- * @property {string} _databaseName - The name of the database.
- * @property {int} _databaseVersion - The version of the database being used.
- * @property {string} _tableName - The name of the table used to store data.
- * @property {string} _primaryKeyField - The name of the field/property used to store key values.
- * @property {string} _persistenceType - The type of persistence used to store data. (cookie, localStorage, sessionStorage)
- * @property {DatabaseSettings} _databaseDefaults - The default settings for the database.
+ * @property {string} databaseName - The name of the database.
+ * @property {int} databaseVersion - The version of the database being used.
+ * @property {string} tableName - The name of the table used to store data.
+ * @property {string} primaryKeyField - The name of the field/property used to store key values.
+ * @property {string} persistenceType - The type of persistence used to store data. (cookie, localStorage, sessionStorage)
+ * @property {DatabaseSettings} databaseDefaults - The default settings for the database.
  *
  * @constructor
  * @param {DatabaseSettings} databaseSettings - The settings to be used for the database.
@@ -59,14 +59,12 @@ export { DatabaseSettings, PersistenceTypes };
  * console.log(context._persistenceType); // "localStorage"
  */
 export class DataContext {
-
-  //private fields to store database settings
-  #databaseName = null;
-  #databaseVersion = null;
-  #tableName = null;
-  #primaryKeyField = null;
-  #persistenceType = null;
-  #databaseDefaults = null;
+  #databaseDefaults;
+  #databaseName;
+  #databaseVersion;
+  #tableName;
+  #primaryKeyField;
+  #persistenceType;
 
   constructor(databaseSettings) {
     this.#databaseDefaults = new DatabaseSettings();
@@ -76,7 +74,17 @@ export class DataContext {
       this.#tableName = databaseSettings.tableName;
       this.#primaryKeyField = databaseSettings.primaryKeyField;
       this.#persistenceType = databaseSettings.persistenceType;
+      this.#databaseName = databaseSettings.databaseName;
+      this.#databaseVersion = databaseSettings.databaseVersion;
+      this.#tableName = databaseSettings.tableName;
+      this.#primaryKeyField = databaseSettings.primaryKeyField;
+      this.#persistenceType = databaseSettings.persistenceType;
     } else {
+      this.#databaseName = this.#databaseDefaults.databaseName;
+      this.#databaseVersion = this.#databaseDefaults.databaseVersion;
+      this.#tableName = this.#databaseDefaults.tableName;
+      this.#primaryKeyField = this.#databaseDefaults._primaryKeyField;
+      this.#persistenceType = this.#databaseDefaults.persistenceType;
       this.#databaseName = this.#databaseDefaults.databaseName;
       this.#databaseVersion = this.#databaseDefaults.databaseVersion;
       this.#tableName = this.#databaseDefaults.tableName;
@@ -118,7 +126,7 @@ export class DataContext {
     let data = [];
     let storageItem = new StorageItem();
 
-    switch (this._persistenceType) {
+    switch (this.#persistenceType) {
       //retrieve from cookie service
       case PersistenceTypes.CookieStore:
         let cookieService = new CookieService();
@@ -313,19 +321,19 @@ export class DataContext {
       //remove from Cookie service
       case PersistenceTypes.CookieStore:
         let cookieService = new CookieService();
-        cookieService.remove(this._tableName);
+        cookieService.remove(this.#tableName);
         break;
 
       //remove from LocalStorage service
       case PersistenceTypes.LocalStorage:
         var localStorageService = new LocalStorageService();
-        localStorageService.remove(this._databaseName);
+        localStorageService.remove(this.#databaseName);
         break;
 
       //remove from sessionStorage service
       case PersistenceTypes.SessionStorage:
         var sessionStorageService = new SessionStorageService();
-        sessionStorageService.remove(this._databaseName);
+        sessionStorageService.remove(this.#databaseName);
         break;
 
       default:
