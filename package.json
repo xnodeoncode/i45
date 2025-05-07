@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "patch": "npm version prerelease --preid=alpha",
-    "build": "cp -a src/. dist/",
+    "build": "xcopy src\\* dist\\ /s /e",
     "checkin": "git add . && git commit -a -m \"See CHANGES.md for a list of Revisions.\" "
   },
   "keywords": [
