@@ -119,12 +119,12 @@ books.push(book);
 books.push(bookTwo);
 
 // create an array of cities for the mapContext.
-var conroe = { id: 1, name: "Conroe", state: "Texas", postalCode: "77301" };
-var houston = { id: 2, name: "Houston", state: "Texas", postalCode: "77056" };
+var c1 = { id: 1, name: "Columbus", state: "Ohio", postalCode: "43065" };
+var c2 = { id: 2, name: "Atlanta", state: "Georgia", postalCode: "30303" };
 
 var cities = [];
-cities.push(conroe);
-cities.push(houston);
+cities.push(c1);
+cities.push(c2);
 
 // persist the objects using the associated context.
 booksContext.persist(books);
@@ -167,12 +167,12 @@ var mapSettings = new DatabaseSettings(
 );
 
 // create an array of cities.
-var conroe = { id: 1, name: "Conroe", state: "Texas", postalCode: "77301" };
-var houston = { id: 2, name: "Houston", state: "Texas", postalCode: "77056" };
+var c1 = { id: 1, name: "Columbus", state: "Ohio", postalCode: "43065" };
+var c2 = { id: 2, name: "Atlanta", state: "Georgia", postalCode: "30303" };
 
 var cities = [];
-cities.push(conroe);
-cities.push(houston);
+cities.push(c1);
+cities.push(c2);
 
 // Create a data context object
 var combinedDataStoreContext = new DataContext();
@@ -201,8 +201,8 @@ var dataContext = new DataContext();
 
 // create an array of cities.
 var cities = [];
-cities.push({ id: 1, name: "Conroe", state: "Texas", postalCode: "77301" });
-cities.push({ id: 2, name: "Houston", state: "Texas", postalCode: "77056" });
+cities.push({ id: 1, name: "Columbus", state: "Ohio", postalCode: "43065" });
+cities.push({ id: 2, name: "Atlanta", state: "Georgia", postalCode: "30303" });
 
 // persist the collection
 dataContext.persist(cities);
