@@ -19,6 +19,11 @@ import { LocalStorageService } from "./services/localStorageService.js";
 import { CookieService } from "./services/cookieService.js";
 
 /*************************************************************************************
+ * Import the WebSQLService service in order to persist to window.localStorage.
+ ************************************************************************************/
+import { WebSQLService } from "./services/webSQLService.js";
+
+/*************************************************************************************
  * Import StorageItem class for a strongly typed storage object.
  ************************************************************************************/
 import { StorageItem } from "./models/storageItem.js";
@@ -194,7 +199,7 @@ export class DataContext {
 
     return data;
   }
-
+  
   async persist(databaseSettings, items) {
     switch (arguments.length) {
       case 1:
@@ -225,6 +230,7 @@ export class DataContext {
         );
         break;
     }
+    return this;
   }
 
   /*************************************************************************************
@@ -314,6 +320,7 @@ export class DataContext {
         );
         break;
     }
+    return this;
   }
 
   async #removeItems() {

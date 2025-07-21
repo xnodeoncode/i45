@@ -8,7 +8,8 @@
     "build-windows": "xcopy src\\* dist\\ /s /e",
     "build-linux": "cp -r src/* dist/",
     "build": "npm run build-linux && npm run build-windows",
-    "checkin": "git add . && git commit -a -m \"See CHANGES.md for a list of Revisions.\" "
+    "checkin": "git add . && git commit -a -m \"See CHANGES.md for a list of Revisions.\" ",
+    "link": "npm run build && npm link"
   },
   "keywords": [
     "LocalStorage",

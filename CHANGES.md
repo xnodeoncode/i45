@@ -42,3 +42,9 @@
 ### December 8, 2024
 
 - Added clear() method to data context to allow data removal.
+
+## v.1.0.0
+
+### May 12, 2025
+- Added cookie validation.
+- 

@@ -17,7 +17,25 @@ export class CookieService {
    * CookieName|string: The name of the cookie.
    * CookieData|string: The value to be stored.
    ************************************************************************************/
-  save(cookieName, cookieData) {
+  async save(cookieName, cookieData, options = {}) {
+    if (typeof cookieName !== "string" || typeof cookieData !== "string") {
+      console.error("Cookie name and data must be strings.");
+      return;
+    }
+    if (cookieName.length === 0 || cookieData.length === 0) {
+      console.error("Cookie name and data cannot be empty.");
+      return;
+    }
+    if (cookieName.length > 200) {
+      console.error("Cookie name is too long. Max length is 200 characters.");
+      return;
+    }
+
+    options = {
+      path: "/",
+      ...options
+    }
+    
     if (!this.#storageAvailable) {
       console.log("CookieStore is not available.");
       return;
@@ -25,28 +43,51 @@ export class CookieService {
 
     //TODO: validate size of cookie.
     // if it is too large, fall back to indexedDB and log a message.
-    let day = 24 * 60 * 60 * 1000;
-    let cookie = {
-      name: `${cookieName}`,
-      value: `${cookieData}`,
-      expires: Date.now() + day,
-    };
-    if (cookieData.length > 4096) {
-      console.warn(
-        "Cookie size is too large. Consider using indexedDB instead."
+    let cookieSize = cookieName.length + cookieData.length;
+    if (cookieSize > 4096) {
+      console.error(
+        "Cookie size is too large. Consider using Web Storage instead. Cookie size: " +
+          cookieSize +
+          " bytes. Max size: 4096 bytes."
       );
+      return;
     }
 
+    let day = 24 * 60 * 60 * 1000;
+    let expiryDate = new Date(Date.now() + day);
+
+    let cookie = {
+      name: encodeURIComponent(cookieName),
+      value: encodeURIComponent(cookieData),
+      expires: expiryDate.toUTCString(),
+    };
+    
+    // Set cookie options
+    if (options.expires) {
+      if (typeof options.expires === "number") {
+        let edate = new Date(Date.now() + options.expires * day);
+        cookie.expires = edate.toUTCString();
+      } else if (options.expires instanceof Date) {
+        cookie.expires = options.expires.toUTCString();
+      }
+    }
+
+    for (let optionKey in options) {
+    cookie += "; " + optionKey;
+    let optionValue = options[optionKey];
+    if (optionValue !== true) {
+      cookie += "=" + optionValue;
+    }
+  }
+
     try {
-      cookieStore.set(cookie);
+      await cookieStore.set(cookie);
     } catch (error) {
-      console.warn("CookieStore is not supported in this browser.");
+      console.warn("Error setting cookie in CookieStore. Falling back to document.cookie.", error);
       try {
-        document.cookie = `${cookie.name}=${cookie.value}; expires=${new Date(
-          cookie.expires
-        ).toUTCString()}`;
+        document.cookie = `${cookie.name}=${cookie.value}; expires=${cookie.expires};`;
       } catch (error) {
-        console.warn("Cookie could not be saved.");
+        console.warn("Error setting cookie:", error);
       }
     }
   }
@@ -55,41 +96,59 @@ export class CookieService {
    * Gets a document.cookie value.
    * CookieName|string: The name of the cookie that will be retrieved.
    ************************************************************************************/
-  retrieve(cookieName) {
+  async retrieve(cookieName) {
     if (!this.#storageAvailable) {
       console.log("CookieStore is not available.");
       return;
     }
+    
+    let encodedName = encodeURIComponent(cookieName);
 
-    let item = null;
+    try{
+      await cookieStore.get(encodedName).then((cookie) => {
+        if (cookie)
+          return new StorageItem(decodeURIComponent(cookie.name), decodeURIComponent(cookie.value));
+      });
+    } catch (error) {
+      console.warn("Error retrieving cookie from CookieStore:", error);
+    }
+
+    // Fallback to document.cookie if cookieStore is not available
+    // or if the cookie is not found in cookieStore
+
+    let item = new StorageItem(cookieName, "");
     let cookieData = document.cookie
       .split("; ")
-      .find((row) => row.startsWith(`${cookieName}=`))
+      .find((row) => row.startsWith(`${encodedName}=`))
       ?.split("=")[1];
 
     if (cookieData != null && cookieData.length > 0) {
-      item = new StorageItem(cookieName, cookieData);
+      item.data = decodeURIComponent(cookieData);
+      return item
+    } else {
+      console.warn(`Cookie ${cookieName} not found.`);
+      return item;
     }
-    return item;
   }
 
   /************************************************************************************
    * Deletes a document cookie.
    * CookieName|string: The name of the cookie tha will be deleted.
    ************************************************************************************/
-  remove(cookieName) {
+  async remove(cookieName) {
     if (!this.#storageAvailable) {
       console.log("CookieStore is not available.");
       return;
     }
+    let encodedName = encodeURIComponent(cookieName);
     try {
-      cookieStore.delete(cookieName);
+      await cookieStore.delete(encodedName);
     } catch (e) {
-      console.warn("CookieStore is not supported in this browser.");
+      console.warn("Error deleting cookie from CookieStore:", e);
       try {
-        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+        document.cookie = `${encodedName}=""; max-age=-1;`;
       } catch (error) {
-        console.warn("Cookie could not be removed.");
+        console.warn("Error deleting cookie:", error);
       }
     }
   }

@@ -194,7 +194,7 @@ export class DataContext {
 
     return data;
   }
-
+  
   async persist(databaseSettings, items) {
     switch (arguments.length) {
       case 1:
@@ -225,6 +225,7 @@ export class DataContext {
         );
         break;
     }
+    return this;
   }
 
   /*************************************************************************************
@@ -314,6 +315,7 @@ export class DataContext {
         );
         break;
     }
+    return this;
   }
 
   async #removeItems() {

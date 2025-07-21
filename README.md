@@ -13,6 +13,14 @@ npm i i45
 
 ## Usage
 
+- [Default Storage Settings](#default-storage-settings)
+- [Custom Storage Settings](#custom-storage-settings)
+- [Multiple Data Contexts](#multiple-data-contexts)
+- [Multiple Data Stores](#using-a-single-datacontext-with-multiple-data-stores)
+- [Retrieving Data](#retrieving-data)
+- [Clearing the Data Store](#clearing-the-data-store)
+- [Persistence Types](#persistencetypes)
+
 ### Default Storage Settings
 
 ```javascript
@@ -188,6 +196,25 @@ var returnedBooks = combinedDataStoreContext.retrieve(bookshelfSettings);
 // An example using the map settings.
 combinedDataStoreContext.persist(mapSettings, cities);
 var returnedCities = combinedDataStoreContext.retrieve(mapSettings);
+```
+
+### Retrieving Data
+The retrieve method on the data context returns a Promise. The example below demonstrates how to retrieve Cookie data.
+
+```javascript
+import {DataContext} from 'i45';
+
+var context = new DataContext();
+
+var books = [{ title: "The Road to React", author: "Robin Wieruch", id: 123456 },{ title: "Creating NPM Package", author: "Oluwatobi Sofela", id: 123457}];
+
+context.persist(books)
+
+
+var cookieData = context.retrieve().then((data)=> console.log("Cookie Data", data));
+
+console.log(cookieData);
+
 ```
 
 ### Clearing the Data Store
