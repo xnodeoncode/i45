@@ -82,7 +82,7 @@ export class CookieService {
 
     try {
       console.log("Setting cookie in CookieStore:", cookie);
-      await cookieStore.set(cookie);
+      await cookieStore.set(cookie.name, cookie.value, options);
     } catch (error) {
       console.warn(
         "Error setting cookie in CookieStore. Falling back to document.cookie.",
