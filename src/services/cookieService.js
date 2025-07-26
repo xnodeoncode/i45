@@ -33,9 +33,9 @@ export class CookieService {
 
     options = {
       path: "/",
-      ...options
-    }
-    
+      ...options,
+    };
+
     if (!this.#storageAvailable) {
       console.log("CookieStore is not available.");
       return;
@@ -61,7 +61,7 @@ export class CookieService {
       value: encodeURIComponent(cookieData),
       expires: expiryDate.toUTCString(),
     };
-    
+
     // Set cookie options
     if (options.expires) {
       if (typeof options.expires === "number") {
@@ -73,17 +73,21 @@ export class CookieService {
     }
 
     for (let optionKey in options) {
-    cookie += "; " + optionKey;
-    let optionValue = options[optionKey];
-    if (optionValue !== true) {
-      cookie += "=" + optionValue;
+      cookie += "; " + optionKey;
+      let optionValue = options[optionKey];
+      if (optionValue !== true) {
+        cookie += "=" + optionValue;
+      }
     }
-  }
 
     try {
+      console.log("Setting cookie in CookieStore:", cookie);
       await cookieStore.set(cookie);
     } catch (error) {
-      console.warn("Error setting cookie in CookieStore. Falling back to document.cookie.", error);
+      console.warn(
+        "Error setting cookie in CookieStore. Falling back to document.cookie.",
+        error
+      );
       try {
         document.cookie = `${cookie.name}=${cookie.value}; expires=${cookie.expires};`;
       } catch (error) {
@@ -106,10 +110,13 @@ export class CookieService {
 
     console.log("Cookie name: ", cookieName, encodedName);
 
-    try{
+    try {
       await cookieStore.get(encodedName).then((cookie) => {
         if (cookie)
-          return new StorageItem(decodeURIComponent(cookie.name), decodeURIComponent(cookie.value));
+          return new StorageItem(
+            decodeURIComponent(cookie.name),
+            decodeURIComponent(cookie.value)
+          );
       });
     } catch (error) {
       console.warn("Error retrieving cookie from CookieStore:", error);
@@ -126,7 +133,7 @@ export class CookieService {
 
     if (cookieData != null && cookieData.length > 0) {
       item.data = decodeURIComponent(cookieData);
-      return item
+      return item;
     } else {
       console.warn(`Cookie ${cookieName} not found.`);
       return item;
