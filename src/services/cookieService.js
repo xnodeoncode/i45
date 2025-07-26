@@ -81,7 +81,12 @@ export class CookieService {
     }
 
     try {
-      console.log("Setting cookie in CookieStore:", cookie);
+      console.log(
+        "Setting cookie in CookieStore:",
+        cookie.name,
+        cookie.value,
+        options
+      );
       await cookieStore.set(cookie.name, cookie.value, options);
     } catch (error) {
       console.warn(
