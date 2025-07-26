@@ -19,11 +19,6 @@ import { LocalStorageService } from "./services/localStorageService.js";
 import { CookieService } from "./services/cookieService.js";
 
 /*************************************************************************************
- * Import the WebSQLService service in order to persist to window.localStorage.
- ************************************************************************************/
-import { WebSQLService } from "./services/webSQLService.js";
-
-/*************************************************************************************
  * Import StorageItem class for a strongly typed storage object.
  ************************************************************************************/
 import { StorageItem } from "./models/storageItem.js";
