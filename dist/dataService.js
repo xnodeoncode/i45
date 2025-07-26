@@ -19,9 +19,19 @@ import { LocalStorageService } from "./services/localStorageService.js";
 import { CookieService } from "./services/cookieService.js";
 
 /*************************************************************************************
+ * Import the WebSQLService service in order to persist to window.localStorage.
+ ************************************************************************************/
+import { WebSQLService } from "./services/webSQLService.js";
+
+/*************************************************************************************
  * Import StorageItem class for a strongly typed storage object.
  ************************************************************************************/
 import { StorageItem } from "./models/storageItem.js";
+
+/*************************************************************************************
+ * Import the SampleData class to provide sample data for testing and development.
+ ************************************************************************************/
+import { SampleData } from "./services/sampleDataService.js";
 
 /**
  * Import the DatabaseSettings class to provide strongly typed settings for the database.
@@ -35,7 +45,7 @@ import {
 /**
  * Export the DatabaseSettings and PersistenceTypes classes for use with this datacontext in consuming modules.
  */
-export { DatabaseSettings, PersistenceTypes };
+export { DatabaseSettings, PersistenceTypes, SampleData };
 
 /**
  * @class DataContext
@@ -93,7 +103,7 @@ export class DataContext {
     }
   }
 
-  getCurrentSettings(){
+  getCurrentSettings() {
     var settings = new DatabaseSettings(
       this.#databaseName,
       this.#databaseVersion,
@@ -101,7 +111,7 @@ export class DataContext {
       this.#primaryKeyField,
       this.#persistenceType
     );
-    console.log("Current dataContext settings:", settings)
+    console.log("Current dataContext settings:", settings);
     return settings;
   }
 
@@ -194,7 +204,7 @@ export class DataContext {
 
     return data;
   }
-  
+
   async persist(databaseSettings, items) {
     switch (arguments.length) {
       case 1:

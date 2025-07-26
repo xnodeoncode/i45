@@ -101,8 +101,10 @@ export class CookieService {
       console.log("CookieStore is not available.");
       return;
     }
-    
+
     let encodedName = encodeURIComponent(cookieName);
+
+    console.log("Cookie name: ", cookieName, encodedName);
 
     try{
       await cookieStore.get(encodedName).then((cookie) => {

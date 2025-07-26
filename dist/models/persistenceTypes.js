@@ -7,4 +7,5 @@ export const PersistenceTypes = Object.freeze({
   CookieStore: "cookieStore",
   SessionStorage: "sessionStorage",
   LocalStorage: "localStorage",
+  indexedDB: "indexedDB",
 });
