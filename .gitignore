@@ -2,6 +2,7 @@
 /.git/*
 
 dist/
+dist/*
 dist/models/
 dist/data/
 dist/services/
