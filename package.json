@@ -4,7 +4,10 @@
   "main": "./dist/dataService.js",
   "type": "module",
   "scripts": {
-    "patch": "npm version prerelease --preid=alpha",
+    "alpha-patch": "npm version prerelease --preid=alpha",
+    "patch": "npm version patch",
+    "minor": "npm version minor",
+    "major": "npm version major",
     "build-windows": "xcopy src\\* dist\\ /s /e",
     "build-linux": "cp -r src/data dist/ && cp -r src/models dist/ && cp -r src/services dist/ && cp src/dataService.js dist/dataService.js",
     "build-all": "npm run build-linux && npm run build-windows",
