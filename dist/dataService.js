@@ -28,19 +28,25 @@ import { StorageItem } from "./models/storageItem.js";
  ************************************************************************************/
 import { SampleData } from "./services/sampleDataService.js";
 
+/*************************************************************************************
+ * Import StorageLocations enum for strongly typed storage location values.
+ ************************************************************************************/
+import { StorageLocations } from "./models/storageLocations.js";
+
+/*************************************************************************************
+ * Import the PersistenceTypes enum to provide strongly typed values for the persistence types.
+ ************************************************************************************/
+import { PersistenceTypes } from "./models/persistenceTypes.js";
+
 /**
  * Import the DatabaseSettings class to provide strongly typed settings for the database.
- * Import the PersistenceTypes enum to provide strongly typed values for the persistence types.
  */
-import {
-  DatabaseSettings,
-  PersistenceTypes,
-} from "./models/databaseSettings.js";
+import { DatabaseSettings } from "./models/databaseSettings.js";
 
 /**
  * Export the DatabaseSettings and PersistenceTypes classes for use with this datacontext in consuming modules.
  */
-export { DatabaseSettings, PersistenceTypes, SampleData };
+export { DatabaseSettings, PersistenceTypes, SampleData, StorageLocations };
 
 /**
  * @class DataContext
@@ -49,6 +55,7 @@ export { DatabaseSettings, PersistenceTypes, SampleData };
  * @property {string} tableName - The name of the table used to store data.
  * @property {string} primaryKeyField - The name of the field/property used to store key values.
  * @property {string} persistenceType - The type of persistence used to store data. (cookie, localStorage, sessionStorage)
+ * @property {string} storageLocation - The type of persistence used to store data. (cookie, localStorage, sessionStorage)
  * @property {DatabaseSettings} databaseDefaults - The default settings for the database.
  *
  * @constructor
@@ -57,70 +64,128 @@ export { DatabaseSettings, PersistenceTypes, SampleData };
  * @example
  * let settings = new DatabaseSettings("MyDatabase", 1, "MyTable", "id", PersistenceTypes.localStorage);
  * let context = new DataContext(settings);
- * console.log(context._databaseName); // "MyDatabase"
- * console.log(context._databaseVersion); // 1
- * console.log(context._tableName); // "MyTable"
- * console.log(context._primaryKeyField); // "id"
- * console.log(context._persistenceType); // "localStorage"
+ * let currentSettings = context.getCurrentSettings();
+ * console.log(currentSettings.databaseName); // "MyDatabase"
+ * console.log(currentSettings.databaseVersion); // 1
+ * console.log(currentSettings.tableName); // "MyTable"
+ * console.log(currentSettings.primaryKeyField); // "id"
+ * console.log(currentSettings.persistenceType); // "localStorage"
  */
 export class DataContext {
+  // private fields
   #databaseDefaults;
   #databaseName;
   #databaseVersion;
   #tableName;
   #primaryKeyField;
   #persistenceType;
+  #storageLocation;
 
   constructor(databaseSettings) {
     this.#databaseDefaults = new DatabaseSettings();
     if (databaseSettings instanceof DatabaseSettings) {
+      this.#databaseDefaults = databaseSettings;
       this.#databaseName = databaseSettings.databaseName;
       this.#databaseVersion = databaseSettings.databaseVersion;
       this.#tableName = databaseSettings.tableName;
       this.#primaryKeyField = databaseSettings.primaryKeyField;
-      this.#persistenceType = databaseSettings.persistenceType;
-      this.#databaseName = databaseSettings.databaseName;
-      this.#databaseVersion = databaseSettings.databaseVersion;
-      this.#tableName = databaseSettings.tableName;
-      this.#primaryKeyField = databaseSettings.primaryKeyField;
-      this.#persistenceType = databaseSettings.persistenceType;
+      this.#persistenceType = databaseSettings.storageLocation;
+      this.#storageLocation = databaseSettings.storageLocation;
+
+      this.#databaseDefaults.databaseName = databaseSettings.databaseName;
+      this.#databaseDefaults.databaseVersion = databaseSettings.databaseVersion;
+      this.#databaseDefaults.tableName = databaseSettings.tableName;
+      this.#databaseDefaults.primaryKeyField = databaseSettings.primaryKeyField;
+      this.#databaseDefaults.persistenceType = databaseSettings.persistenceType;
+      this.#databaseDefaults.storageLocation = databaseSettings.storageLocation;
     } else {
       this.#databaseName = this.#databaseDefaults.databaseName;
       this.#databaseVersion = this.#databaseDefaults.databaseVersion;
       this.#tableName = this.#databaseDefaults.tableName;
-      this.#primaryKeyField = this.#databaseDefaults._primaryKeyField;
-      this.#persistenceType = this.#databaseDefaults.persistenceType;
-      this.#databaseName = this.#databaseDefaults.databaseName;
-      this.#databaseVersion = this.#databaseDefaults.databaseVersion;
-      this.#tableName = this.#databaseDefaults.tableName;
-      this.#primaryKeyField = this.#databaseDefaults._primaryKeyField;
-      this.#persistenceType = this.#databaseDefaults.persistenceType;
+      this.#primaryKeyField = this.#databaseDefaults.primaryKeyField;
+      this.#persistenceType = this.#databaseDefaults.storageLocation;
+      this.#storageLocation = this.#databaseDefaults.storageLocation;
     }
+    return this;
   }
 
   getCurrentSettings() {
-    var settings = new DatabaseSettings(
-      this.#databaseName,
-      this.#databaseVersion,
-      this.#tableName,
-      this.#primaryKeyField,
-      this.#persistenceType
-    );
+    var settings = {
+      databaseName: this.#databaseName,
+      databaseVersion: this.#databaseVersion,
+      tableName: this.#tableName,
+      primaryKeyField: this.#primaryKeyField,
+      persistenceType: this.#persistenceType,
+      storageLocation: this.#storageLocation,
+    };
     console.log("Current dataContext settings:", settings);
     return settings;
   }
 
-  setStorageType(persistenceType) {
-    if (
-      Object.values(PersistenceTypes)
-        .map((v) => v.toLowerCase())
-        .includes(persistenceType.toLowerCase())
-    ) {
-      this.#persistenceType = persistenceType;
-    } else {
-      throw new Error("Invalid persistence type");
+  // public properties
+  DatabaseSettings = function (settings) {
+    if (settings instanceof DatabaseSettings) this.#databaseDefaults = settings;
+    return this;
+  };
+
+  StorageLocation = function (value) {
+    if (typeof value !== "string")
+      throw new TypeError(`Expected a string, but got ${typeof value}`);
+    if (Object.values(StorageLocations).includes(value)) {
+      this.#storageLocation = value;
+      this.#persistenceType = value;
+      this.#databaseDefaults.StorageLocation = value;
+      this.#databaseDefaults.PersistenceType = value;
     }
-  }
+    return this;
+  };
+
+  /************************************************
+   * @deprecated: Use StorageLocation() instead.
+   *************************************************/
+  PersistenceType = function (value) {
+    if (typeof value !== "string")
+      throw new TypeError(`Expected a string, but got ${typeof value}`);
+    if (Object.values(StorageLocations).includes(value)) {
+      this.#storageLocation = value;
+      this.#persistenceType = value;
+      this.#databaseDefaults.StorageLocation = value;
+      this.#databaseDefaults.PersistenceType = value;
+    }
+    return this;
+  };
+
+  TableName = function (value) {
+    if (typeof value !== "string")
+      throw new TypeError(`Expected a string, but got ${typeof value}`);
+    this.#tableName = value;
+    this.#databaseDefaults.TableName = value;
+    return this;
+  };
+
+  DatabaseName = function (value) {
+    if (typeof value !== "string")
+      throw new TypeError(`Expected a string, but got ${typeof value}`);
+    this.#databaseName = value;
+    this.#databaseDefaults.DatabaseName = value;
+    return this;
+  };
+
+  DatabaseVersion = function (value) {
+    if (typeof value !== "number")
+      throw new TypeError(`Expected a number, but got ${typeof value}`);
+    this.#databaseVersion = value;
+    this.#databaseDefaults.DatabaseVersion = value;
+    return this;
+  };
+
+  PrimaryKeyField = function (value) {
+    if (typeof value !== "string")
+      throw new TypeError(`Expected a string, but got ${typeof value}`);
+    this.#primaryKeyField = value;
+    this.#databaseDefaults.PrimaryKeyField = value;
+    return this;
+  };
 
   async retrieve(databaseSettings) {
     let data = [];
@@ -144,9 +209,9 @@ export class DataContext {
     let storageItem = new StorageItem();
     storageItem.Name = this.#tableName;
 
-    switch (this.#persistenceType) {
+    switch (this.#storageLocation) {
       //retrieve from cookie service
-      case PersistenceTypes.CookieStore:
+      case StorageLocations.CookieStore:
         let cookieService = new CookieService();
         storageItem.Value = await cookieService.retrieve(this.#tableName);
         if (
@@ -167,14 +232,14 @@ export class DataContext {
         break;
 
       //retrieve from localStorage service
-      case PersistenceTypes.LocalStorage:
+      case StorageLocations.LocalStorage:
         var localStorageService = new LocalStorageService();
         storageItem = localStorageService.retrieve(this.#databaseName);
         if (storageItem != null) data = JSON.parse(storageItem.Value);
         break;
 
       //retrieve from sessionStorage service
-      case PersistenceTypes.SessionStorage:
+      case StorageLocations.SessionStorage:
         var sessionStorageService = new SessionStorageService();
         storageItem = sessionStorageService.retrieve(this.#databaseName);
         if (storageItem != null) data = JSON.parse(storageItem.Value);
@@ -194,16 +259,16 @@ export class DataContext {
     let data = [];
     let storageItem = new StorageItem();
 
-    switch (databaseSettings.persistenceType) {
+    switch (databaseSettings.storageLocation) {
       //retrieve from cookie service
-      case PersistenceTypes.CookieStore:
+      case StorageLocations.CookieStore:
         let cookieService = new CookieService();
         storageItem = cookieService.retrieve(databaseSettings.tableName);
         if (storageItem != null) data = JSON.parse(storageItem.Value);
         break;
 
       //retrieve from LocalStorage service
-      case PersistenceTypes.LocalStorage:
+      case StorageLocations.LocalStorage:
         var localStorageService = new LocalStorageService();
         storageItem = localStorageService.retrieve(
           databaseSettings.databaseName
@@ -212,7 +277,7 @@ export class DataContext {
         break;
 
       //retrieve from sessionStorage service
-      case PersistenceTypes.SessionStorage:
+      case StorageLocations.SessionStorage:
         var sessionStorageService = new SessionStorageService();
         storageItem = sessionStorageService.retrieve(
           databaseSettings.databaseName
@@ -227,7 +292,43 @@ export class DataContext {
     return data;
   }
 
+  /*************************************************************************************
+   * @deprecated Use store() instead.
+   * **********************************************************************************/
   async persist(databaseSettings, items) {
+    switch (arguments.length) {
+      case 1:
+        if (Array.isArray(arguments[0])) {
+          this.#persistItems(arguments[0]);
+        } else {
+          console.error(
+            "Items must be an array of objects or values.",
+            arguments[0]
+          );
+        }
+        break;
+      case 2:
+        if (
+          Array.isArray(arguments[1]) &&
+          arguments[0] instanceof DatabaseSettings
+        ) {
+          this.#persistItemsWithProperties(databaseSettings, items);
+        } else {
+          console.error(
+            "Items must be an array of objects or values. DatabaseProperties must be an instance of DatabaseSettings."
+          );
+        }
+        break;
+      default:
+        console.warn(
+          "Invalid arguments. Please provide databaseProperties as an instance of DatabaseSettings and/or an array of items."
+        );
+        break;
+    }
+    return this;
+  }
+
+  async store(databaseSettings, items) {
     switch (arguments.length) {
       case 1:
         if (Array.isArray(arguments[0])) {
@@ -267,20 +368,20 @@ export class DataContext {
   async #persistItems(items) {
     switch (this.#persistenceType) {
       //persist to Cookie service
-      case PersistenceTypes.CookieStore:
+      case StorageLocations.CookieStore:
         let cookieService = new CookieService();
         let cookieData = JSON.stringify(items);
         cookieService.save(this.#tableName, cookieData);
         break;
 
       //persist to LocalStorage service
-      case PersistenceTypes.LocalStorage:
+      case StorageLocations.LocalStorage:
         var localStorageService = new LocalStorageService();
         localStorageService.save(this.#databaseName, JSON.stringify(items));
         break;
 
       //persist to sessionStorage service
-      case PersistenceTypes.SessionStorage:
+      case StorageLocations.SessionStorage:
         var sessionStorageService = new SessionStorageService();
         sessionStorageService.save(this.#databaseName, JSON.stringify(items));
         break;
@@ -296,16 +397,16 @@ export class DataContext {
    * Items: The array of objects or values to be stored.
    ************************************************************************************/
   async #persistItemsWithProperties(databaseSettings, items) {
-    switch (databaseSettings.persistenceType) {
+    switch (databaseSettings.storageLocation) {
       //persist to Cookie service
-      case PersistenceTypes.CookieStore:
+      case StorageLocations.CookieStore:
         let cookieService = new CookieService();
         let cookieData = JSON.stringify(items);
         cookieService.save(databaseSettings.tableName, cookieData);
         break;
 
       //persist to LocalStorage service
-      case PersistenceTypes.LocalStorage:
+      case StorageLocations.LocalStorage:
         var localStorageService = new LocalStorageService();
         localStorageService.save(
           databaseSettings.databaseName,
@@ -314,7 +415,7 @@ export class DataContext {
         break;
 
       //persist to sessionStorage service
-      case PersistenceTypes.SessionStorage:
+      case StorageLocations.SessionStorage:
         var sessionStorageService = new SessionStorageService();
         sessionStorageService.save(
           databaseSettings.databaseName,
@@ -350,22 +451,45 @@ export class DataContext {
     return this;
   }
 
+  async remove(databaseSettings) {
+    switch (arguments.length) {
+      case 0:
+        this.#removeItems();
+        break;
+      case 1:
+        if (databaseSettings instanceof DatabaseSettings) {
+          this.#removeItemsWithProperties(databaseSettings);
+        } else {
+          console.error(
+            "DatabaseProperties must be an instance of DatabaseSettings."
+          );
+        }
+        break;
+      default:
+        console.warn(
+          "Invalid arguments. Please provide databaseProperties as an instance of DatabaseSettings."
+        );
+        break;
+    }
+    return this;
+  }
+
   async #removeItems() {
-    switch (this.#persistenceType) {
+    switch (this.#storageLocation) {
       //remove from Cookie service
-      case PersistenceTypes.CookieStore:
+      case StorageLocations.CookieStore:
         let cookieService = new CookieService();
         cookieService.remove(this.#tableName);
         break;
 
       //remove from LocalStorage service
-      case PersistenceTypes.LocalStorage:
+      case StorageLocations.LocalStorage:
         var localStorageService = new LocalStorageService();
         localStorageService.remove(this.#databaseName);
         break;
 
       //remove from sessionStorage service
-      case PersistenceTypes.SessionStorage:
+      case StorageLocations.SessionStorage:
         var sessionStorageService = new SessionStorageService();
         sessionStorageService.remove(this.#databaseName);
         break;
@@ -376,21 +500,21 @@ export class DataContext {
   }
 
   async #removeItemsWithProperties(databaseSettings) {
-    switch (databaseSettings.persistenceType) {
+    switch (databaseSettings.storageLocation) {
       //remove from Cookie service
-      case PersistenceTypes.CookieStore:
+      case StorageLocations.CookieStore:
         let cookieService = new CookieService();
         cookieService.remove(databaseSettings.tableName);
         break;
 
       //remove from LocalStorage service
-      case PersistenceTypes.LocalStorage:
+      case StorageLocations.LocalStorage:
         var localStorageService = new LocalStorageService();
         localStorageService.remove(databaseSettings.databaseName);
         break;
 
       //remove from sessionStorage service
-      case PersistenceTypes.SessionStorage:
+      case StorageLocations.SessionStorage:
         var sessionStorageService = new SessionStorageService();
         sessionStorageService.remove(databaseSettings.databaseName);
         break;
