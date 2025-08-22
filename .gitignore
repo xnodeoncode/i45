@@ -2,6 +2,7 @@
 /.git/*
 
 dist/
+dist/*
 node_modules/
 public/
 src/assets/
