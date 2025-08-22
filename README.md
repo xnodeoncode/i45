@@ -21,6 +21,7 @@ npm i i45
 - [Retrieving Data from Custom Data Stores](#retrieving-data-from-custom-data-stores)
 - [Clearing the Data Store](#clearing-the-data-store)
 - [Storage Locations](#storage-locations)
+- [Using Sample Data](#using-sample-data)
 
 ### Default Storage Settings
 
@@ -308,4 +309,20 @@ When creating a DatabaseSettings object and/or creating an instance of a DataCon
 ```javascript
 StorageLocations.LocalStorage; // uses window.localStorage to persist data.
 StorageLocations.SessionStorage; // uses window.sessionStorage to persist data.
+```
+
+### Using Sample Data
+
+The i45-Sample-Data package is a library of sample datasets that can be used during development.
+
+The package has been merged here for convenience.
+
+Full usage details can be found at [i45-Sample-Data](https://www.npmjs.com/package/i45-sample-data)
+
+```javascript
+import { SampleData } from "i45";
+
+var books = SampleData.JsonData.Books;
+
+console.log(books);
 ```

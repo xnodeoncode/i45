@@ -78,3 +78,17 @@ context.retrieve().then(async (i) => {
 // clear storage.
 context.remove();
 ```
+
+### Merged i45-Sample-Data package
+
+Full usage details can be found at [i45-Sample-Data](https://www.npmjs.com/package/i45-sample-data)
+
+Sample data has been included in this package for convenience.
+
+```javascript
+import { SampleData } from "i45";
+
+var books = SampleData.JsonData.Books;
+
+console.log(books);
+```
