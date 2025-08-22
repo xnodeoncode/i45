@@ -2,7 +2,11 @@
 /.git/*
 
 dist/
-dist/*
+dist/models/
+dist/data/
+dist/services/
+dist/dataService.js
+
 node_modules/
 public/
 src/assets/
