@@ -43,8 +43,38 @@
 
 - Added clear() method to data context to allow data removal.
 
-## v.1.0.0
+## v.0.0-alpha-20
 
 ### May 12, 2025
+
 - Added cookie validation.
-- 
+
+## v.0.0-alpha-21
+
+- Code refactoring and clean-up.
+- Merged with i45-Sample-Data package.
+- Implemented new public methods and chaining.
+- PersistenceTypes have been deprecated, but remain for backward compatibility. Use StorageLocatons instead.
+- Updated README.md
+
+```javascript
+// import modules
+import { DataContext, StorageLocations } from "i45";
+
+// create an instace of the context class.
+const context = new DataContext();
+
+// modify database properties as needed.
+context.StorageLocation(StorageLocations.LocalStorage).DatabaseName("My Items");
+
+// store a single value. The store method accepts an array of values.
+context.store([1, "tennis ball", true, { id: 4, name: "John" }]);
+
+// retrieve item from storage and do perform desired operation.
+context.retrieve().then(async (i) => {
+  console.log("My Items", i);
+});
+
+// clear storage.
+context.remove();
+```

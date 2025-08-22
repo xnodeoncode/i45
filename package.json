@@ -6,10 +6,14 @@
   "scripts": {
     "patch": "npm version prerelease --preid=alpha",
     "build-windows": "xcopy src\\* dist\\ /s /e",
-    "build-linux": "cp -r src/* dist/",
-    "build": "npm run build-linux && npm run build-windows",
+    "build-linux": "cp -r src/data dist/ && cp -r src/models dist/ && cp -r src/services dist/ && cp src/dataService.js dist/dataService.js",
+    "build-all": "npm run build-linux && npm run build-windows",
     "checkin": "git add . && git commit -a -m \"See CHANGES.md for a list of Revisions.\" ",
-    "link": "npm run build && npm link"
+    "link": "npm run build-all && npm link",
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
   },
   "keywords": [
     "LocalStorage",
@@ -24,8 +28,21 @@
     "type": "git",
     "url": "git+https://github.com/xnodeoncode/i45.git"
   },
-  "devDependencies": {},
   "bugs": {
     "url": "https://github.com/xnodeoncode/i45/issues"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.30.1",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.6.0",
+    "eslint": "^9.30.1",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^16.3.0",
+    "prop-types": "^15.8.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "vite": "^7.0.4"
   }
 }

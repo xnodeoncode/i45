@@ -18,8 +18,9 @@ npm i i45
 - [Multiple Data Contexts](#multiple-data-contexts)
 - [Multiple Data Stores](#using-a-single-datacontext-with-multiple-data-stores)
 - [Retrieving Data](#retrieving-data)
+- [Retrieving Data from Custom Data Stores](#retrieving-data-from-custom-data-stores)
 - [Clearing the Data Store](#clearing-the-data-store)
-- [Persistence Types](#persistencetypes)
+- [Storage Locations](#storage-locations)
 
 ### Default Storage Settings
 
@@ -27,7 +28,7 @@ npm i i45
 import { DataContext } from "i45";
 
 // Create an instance of the datacontext.
-// The default storage location is Cookie storage using a default table name.
+// The default storage location is local storage using a default table name.
 var dataContext = new DataContext();
 
 // Create an array of objects. This is a sample collection of books
@@ -43,23 +44,22 @@ books.push(book);
 books.push(bookTwo);
 
 // Persist the collection to the datastore, passing in array of objects.
-dataContext.persist(books);
+dataContext.store(books);
 ```
 
 ### Custom Storage Settings
 
 ```javascript
-import { DataContext, DatabaseSettings, PersistenceTypes } from "i45";
+import { DataContext, DatabaseSettings, StorageLocations } from "i45";
 
 // Create a database settings object with the desired values.
-// An id field name is required. This example uses "id".
-// PersistenceTypes.CookieStore uses the table name as the key.
+// A primary key field name is required. This example uses "id".
 var settings = new DatabaseSettings(
   "BookShelf",
   1,
   "Books",
   "id",
-  PersistenceTypes.LocalStorage
+  StorageLocations.LocalStorage
 );
 
 // Create an instance of the datacontext, passing in the database settings.
@@ -78,19 +78,19 @@ books.push(book);
 books.push(bookTwo);
 
 // persist the collection to the datastore, passing in the database settings and the collection.
-dataContext.persist(books);
+dataContext.store(books);
 ```
 
 ### Multiple Data Contexts
 
 ```javascript
 /* 
-A database settings object with a unique database name and/or, as in the case of CookieStore storage, a unique table name is required to have multiple data stores.
+A database settings object with a unique name for each database is required.
 
 See the examples below.
 */
 
-import { DataContext, DatabaseSettings, PersistenceTypes } from "i45";
+import { DataContext, DatabaseSettings, StorageLocations } from "i45";
 
 // These settings can be used to create a data store for storing and retrieving books.
 var bookshelfSettings = new DatabaseSettings(
@@ -98,7 +98,7 @@ var bookshelfSettings = new DatabaseSettings(
   1,
   "Books",
   "id",
-  PersistenceTypes.LocalStorage
+  StorageLocations.LocalStorage
 );
 
 // These settings can be used to create a data store for storing and retrieving cities.
@@ -107,7 +107,7 @@ var mapSettings = new DatabaseSettings(
   1,
   "Cities",
   "id",
-  PersistenceTypes.LocalStorage
+  StorageLocations.LocalStorage
 );
 
 // Create instances of the datacontext, passing in the relevant database settings. For Cookie storage, tableName is used as the cookie name.
@@ -128,15 +128,20 @@ books.push(bookTwo);
 
 // create an array of cities for the mapContext.
 var c1 = { id: 1, name: "Seattle", state: "Washington", postalCode: "98109" };
-var c2 = { id: 2, name: "Bradfordsville", state: "Kentucky", postalCode: "40009" };
+var c2 = {
+  id: 2,
+  name: "Bradfordsville",
+  state: "Kentucky",
+  postalCode: "40009",
+};
 
 var cities = [];
 cities.push(c1);
 cities.push(c2);
 
 // persist the objects using the associated context.
-booksContext.persist(books);
-mapContext.persist(cities);
+booksContext.store(books);
+mapContext.store(cities);
 ```
 
 ### Using a single DataContext with multiple data stores.
@@ -150,7 +155,7 @@ var bookshelfSettings = new DatabaseSettings(
   1,
   "Books",
   "id",
-  PersistenceTypes.LocalStorage
+  StorageLocations.LocalStorage
 );
 
 // create an array of books.
@@ -171,12 +176,17 @@ var mapSettings = new DatabaseSettings(
   1,
   "Cities",
   "id",
-  PersistenceTypes.LocalStorage
+  StorageLocations.LocalStorage
 );
 
 // create an array of cities.
 var c1 = { id: 1, name: "Seattle", state: "Washington", postalCode: "98109" };
-var c2 = { id: 2, name: "Bradfordsville", state: "Kentucky", postalCode: "40009" };
+var c2 = {
+  id: 2,
+  name: "Bradfordsville",
+  state: "Kentucky",
+  postalCode: "40009",
+};
 
 var cities = [];
 cities.push(c1);
@@ -190,31 +200,70 @@ Persist and retrieve the items using the combined data context passing in the da
 */
 
 // An example uisng the bookshelf settings.
-combinedDataStoreContext.persist(bookshelfSettings, books);
+combinedDataStoreContext.store(bookshelfSettings, books);
 var returnedBooks = combinedDataStoreContext.retrieve(bookshelfSettings);
 
 // An example using the map settings.
-combinedDataStoreContext.persist(mapSettings, cities);
+combinedDataStoreContext.store(mapSettings, cities);
 var returnedCities = combinedDataStoreContext.retrieve(mapSettings);
 ```
 
 ### Retrieving Data
-The retrieve method on the data context returns a Promise. The example below demonstrates how to retrieve Cookie data.
+
+The retrieve method on the data context returns a Promise. The example below demonstrates how to retrieve data using default database settings.
 
 ```javascript
-import {DataContext} from 'i45';
+import { DataContext } from "i45";
 
 var context = new DataContext();
 
-var books = [{ title: "The Road to React", author: "Robin Wieruch", id: 123456 },{ title: "Creating NPM Package", author: "Oluwatobi Sofela", id: 123457}];
+var books = [
+  { title: "The Road to React", author: "Robin Wieruch", id: 123456 },
+  { title: "Creating NPM Package", author: "Oluwatobi Sofela", id: 123457 },
+];
 
-context.persist(books)
+context.store(books);
 
+context.retrieve().then((data) => console.log("Cookie Data", data));
+```
 
-var cookieData = context.retrieve().then((data)=> console.log("Cookie Data", data));
+### Retrieving Data from Custom Data Stores
 
-console.log(cookieData);
+To retrieve data using customized settings, the database settings object must be provided.
 
+```javascript
+import { DataContext, DatabaseSettings, StorageLocations } from "i45";
+
+// Create a database settings object with the desired values.
+// A primary key field name is required. This example uses "id".
+var settings = new DatabaseSettings(
+  "BookShelf",
+  1,
+  "Books",
+  "id",
+  StorageLocations.LocalStorage
+);
+
+// Create an instance of the datacontext, passing in the database settings.
+var dataContext = new DataContext(settings);
+
+// create an array of objects. This is a sample collection of books
+var book = { title: "The Road to React", author: "Robin Wieruch", id: 123456 };
+var bookTwo = {
+  title: "Creating NPM Package",
+  author: "Oluwatobi Sofela",
+  id: 123457,
+};
+
+var books = [];
+books.push(book);
+books.push(bookTwo);
+
+// persist the collection to the datastore, passing in the database settings and the collection.
+dataContext.store(settings, books);
+
+// retrieve the data.
+datacontext.retrieve(settings);
 ```
 
 ### Clearing the Data Store
@@ -228,26 +277,35 @@ var dataContext = new DataContext();
 
 // create an array of cities.
 var cities = [];
-cities.push({ id: 1, name: "Seattle", state: "Washington", postalCode: "98109" });
-cities.push({ id: 2, name: "Bradfordsville", state: "Kentucky", postalCode: "40009" });
+cities.push({
+  id: 1,
+  name: "Seattle",
+  state: "Washington",
+  postalCode: "98109",
+});
+cities.push({
+  id: 2,
+  name: "Bradfordsville",
+  state: "Kentucky",
+  postalCode: "40009",
+});
 
 // persist the collection
-dataContext.persist(cities);
+dataContext.store(cities);
 
 // remove the item from storage.
 dataContext.clear();
 ```
 
-### PersistenceTypes
+### Storage Locations
 
-PersistenceTypes is an enum of the available storage options which currently are, CookieStore, LocalStorage, and SessionStorage.
+StorageLocations is an enum of the available storage options which are currently LocalStorage and SessionStorage.
 
-#### Using PersistenceTypes
+#### Using StorageLocations
 
-When creating a DatabaseSettings object and/or creating an instance of a DataContext, one of the persistence types below are required.
+When creating a DatabaseSettings object and/or creating an instance of a DataContext, one of the storage locations below is required.
 
 ```javascript
-PersistenceTypes.CookieStore; // uses window.cookieStore to persist data.
-PersistenceTypes.LocalStorage; // uses window.localStorage to persist data.
-PersistenceTypes.SessionStorage; // uses window.sessionStorage to persist data.
+StorageLocations.LocalStorage; // uses window.localStorage to persist data.
+StorageLocations.SessionStorage; // uses window.sessionStorage to persist data.
 ```

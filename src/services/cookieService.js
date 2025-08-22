@@ -31,11 +31,6 @@ export class CookieService {
       return;
     }
 
-    options = {
-      path: "/",
-      ...options,
-    };
-
     if (!this.#storageAvailable) {
       console.log("CookieStore is not available.");
       return;
@@ -46,7 +41,7 @@ export class CookieService {
     let cookieSize = cookieName.length + cookieData.length;
     if (cookieSize > 4096) {
       console.error(
-        "Cookie size is too large. Consider using Web Storage instead. Cookie size: " +
+        "Cookie size is too large. Cookie size: " +
           cookieSize +
           " bytes. Max size: 4096 bytes."
       );
@@ -59,35 +54,12 @@ export class CookieService {
     let cookie = {
       name: encodeURIComponent(cookieName),
       value: encodeURIComponent(cookieData),
-      expires: expiryDate.toUTCString(),
+      expires: expiryDate,
     };
 
-    // Set cookie options
-    if (options.expires) {
-      if (typeof options.expires === "number") {
-        let edate = new Date(Date.now() + options.expires * day);
-        cookie.expires = edate.toUTCString();
-      } else if (options.expires instanceof Date) {
-        cookie.expires = options.expires.toUTCString();
-      }
-    }
-
-    for (let optionKey in options) {
-      cookie += "; " + optionKey;
-      let optionValue = options[optionKey];
-      if (optionValue !== true) {
-        cookie += "=" + optionValue;
-      }
-    }
-
     try {
-      console.log(
-        "Setting cookie in CookieStore:",
-        cookie.name,
-        cookie.value,
-        options
-      );
-      await cookieStore.set(cookie.name, cookie.value, options);
+      console.log("Setting cookie in CookieStore:", cookie);
+      await cookieStore.set(cookie);
     } catch (error) {
       console.warn(
         "Error setting cookie in CookieStore. Falling back to document.cookie.",
@@ -113,16 +85,16 @@ export class CookieService {
 
     let encodedName = encodeURIComponent(cookieName);
 
-    console.log("Cookie name: ", cookieName, encodedName);
-
     try {
-      await cookieStore.get(encodedName).then((cookie) => {
-        if (cookie)
-          return new StorageItem(
-            decodeURIComponent(cookie.name),
-            decodeURIComponent(cookie.value)
-          );
-      });
+      let cookie = await cookieStore.get(encodedName);
+      console.log("Retrieved cookie from CookieStore:", cookie);
+      if (!cookie) {
+        return new StorageItem(cookieName, "");
+      }
+      return new StorageItem(
+        decodeURIComponent(cookie.name),
+        decodeURIComponent(cookie.value)
+      );
     } catch (error) {
       console.warn("Error retrieving cookie from CookieStore:", error);
     }

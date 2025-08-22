@@ -9,3 +9,17 @@
 
 
 .gitignore
+
+/node_modules
+/node_modules/*
+/node_modules/**/*
+
+/public
+/public/*
+/public/**/*
+
+*.config.js
+*.log
+*.env
+
+*.html

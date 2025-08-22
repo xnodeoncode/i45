@@ -1,5 +1,5 @@
+import { StorageLocations } from "./storageLocations.js";
 import { PersistenceTypes } from "./persistenceTypes.js";
-export { PersistenceTypes };
 
 /**
  * @class DatabaseSettings
@@ -7,14 +7,16 @@ export { PersistenceTypes };
  * @property {int} databaseVersion - The version of the database being used.
  * @property {string} tableName - The name of the table used to store data.
  * @property {string} primaryKeyField - The name of the field/property used to store key values.
- * @property {string} persistenceType - The type of persistence used to store data. (cookie, localStorage, sessionStorage)
+ * @property {string} persistenceType - The type of persistence used to store data. (cookieStore, localStorage, sessionStorage)
+ * @property {string} storageLocation - The location of the data store. (CookieStore, localStorage, or sessionStorage)
  *
  * @constructor
  * @param {string} databaseName - The name of the database.
  * @param {int} databaseVersion - The version of the database being used.
  * @param {string} tableName - The name of the table used to store data.
  * @param {string} primaryKeyField - The name of the field/property used to store key values.
- * @param {string} persistenceType - The type of persistence used to store data. (cookie, localStorage, sessionStorage)
+ * @param {string} persistenceType - The type of persistence used to store data. (cookieStore, localStorage, sessionStorage)
+ * @param {string} storageLocation - The location of the data store. (CookieStore, localStorage, or sessionStorage)
  *
  * @example
  * let settings = new DatabaseSettings("MyDatabase", 1, "MyTable", "id", PersistenceTypes.localStorage);
@@ -22,7 +24,8 @@ export { PersistenceTypes };
  * console.log(settings.databaseVersion); // 1
  * console.log(settings.tableName); // "MyTable"
  * console.log(settings.primaryKeyField); // "id"
- * console.log(settings.persistenceType); // "cookieStore"
+ * console.log(settings.persistenceType); // "localStorage"
+ * console.log(settings.storageLocation); // "localStorage"
  *
  * @example
  * let settings = new DatabaseSettings();
@@ -31,6 +34,7 @@ export { PersistenceTypes };
  * console.log(settings.tableName); // "Items"
  * console.log(settings.primaryKeyField); // "id"
  * console.log(settings.persistenceType); // "localStorage"
+ * console.log(settings.storageLocation); // "localStorage"
  *
  * @returns {DatabaseSettings} - A new instance of DatabaseSettings with the specified properties.
  */
@@ -40,12 +44,14 @@ export class DatabaseSettings {
     databaseVersion,
     tableName,
     primaryKeyField,
-    persistenceType
+    persistenceType,
+    storageLocation
   ) {
     this.databaseName = databaseName || "ItemStore";
     this.databaseVersion = databaseVersion || 1;
     this.tableName = tableName || "Items";
     this.primaryKeyField = primaryKeyField || "id";
-    this.persistenceType = persistenceType || PersistenceTypes.CookieStore;
+    this.persistenceType = persistenceType || PersistenceTypes.LocalStorage;
+    this.storageLocation = storageLocation || StorageLocations.LocalStorage;
   }
 }

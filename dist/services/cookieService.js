@@ -87,7 +87,7 @@ export class CookieService {
         cookie.value,
         options
       );
-      await cookieStore.set(cookie.name, cookie.value, options);
+      await cookieStore.set(cookie);
     } catch (error) {
       console.warn(
         "Error setting cookie in CookieStore. Falling back to document.cookie.",
@@ -113,16 +113,16 @@ export class CookieService {
 
     let encodedName = encodeURIComponent(cookieName);
 
-    console.log("Cookie name: ", cookieName, encodedName);
-
     try {
-      await cookieStore.get(encodedName).then((cookie) => {
-        if (cookie)
-          return new StorageItem(
-            decodeURIComponent(cookie.name),
-            decodeURIComponent(cookie.value)
-          );
-      });
+      let cookie = await cookieStore.get(encodedName);
+      console.log("Retrieved cookie from CookieStore:", cookie);
+      if (!cookie) {
+        return new StorageItem(cookieName, "");
+      }
+      return new StorageItem(
+        decodeURIComponent(cookie.name),
+        decodeURIComponent(cookie.value)
+      );
     } catch (error) {
       console.warn("Error retrieving cookie from CookieStore:", error);
     }

@@ -110,6 +110,18 @@ export class DataContext {
     return settings;
   }
 
+  setStorageType(persistenceType) {
+    if (
+      Object.values(PersistenceTypes)
+        .map((v) => v.toLowerCase())
+        .includes(persistenceType.toLowerCase())
+    ) {
+      this.#persistenceType = persistenceType;
+    } else {
+      throw new Error("Invalid persistence type");
+    }
+  }
+
   async retrieve(databaseSettings) {
     let data = [];
 
@@ -130,13 +142,28 @@ export class DataContext {
   async #retrieveItems() {
     let data = [];
     let storageItem = new StorageItem();
+    storageItem.Name = this.#tableName;
 
     switch (this.#persistenceType) {
       //retrieve from cookie service
       case PersistenceTypes.CookieStore:
         let cookieService = new CookieService();
-        storageItem = cookieService.retrieve(this.#tableName);
-        if (storageItem != null) data = JSON.parse(storageItem.Value);
+        storageItem.Value = await cookieService.retrieve(this.#tableName);
+        if (
+          storageItem.Value !== null &&
+          storageItem.Value !== undefined &&
+          storageItem.Value !== "" &&
+          storageItem.Value.length > 0
+        )
+          try {
+            data = JSON.parse(storageItem.Value);
+          } catch (error) {
+            console.warn(
+              "Error parsing JSON from cookie data:",
+              error,
+              storageItem
+            );
+          }
         break;
 
       //retrieve from localStorage service
