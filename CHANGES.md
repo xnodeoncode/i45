@@ -92,3 +92,16 @@ var books = SampleData.JsonData.Books;
 
 console.log(books);
 ```
+
+## v2.0.0
+
+#### August 24, 2025
+
+- This is a major release consisting of a complete refactoring of the data context. It is not compatible with 1.x.x versions.
+- Consolidated the verbs removing deprecated methods and properties.
+- Added remove() method to remove a specific data store.
+- Refactored clear() method to clear all data stores.
+- Added application logging support via the [i45-jslogger](https://www.npmjs.com/package/i45-jslogger) package.
+- Logging is turned on/off via the enableLogging() method.
+- Added default values to public method parameters to improve error handling.
+- Deprecated methods removed.

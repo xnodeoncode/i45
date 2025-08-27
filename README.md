@@ -2,7 +2,7 @@
 
 [NodeJS package](https://www.npmjs.com/package/i45)
 
-A wrapper for browser storage.
+As a wrapper for browser storage (localStorage and sessionStorage), i45 allows you to store any collection of data in the form of an array.
 
 ## Installation
 
@@ -15,198 +15,42 @@ npm i i45
 
 - [Default Storage Settings](#default-storage-settings)
 - [Custom Storage Settings](#custom-storage-settings)
-- [Multiple Data Contexts](#multiple-data-contexts)
-- [Multiple Data Stores](#using-a-single-datacontext-with-multiple-data-stores)
 - [Retrieving Data](#retrieving-data)
 - [Retrieving Data from Custom Data Stores](#retrieving-data-from-custom-data-stores)
-- [Clearing the Data Store](#clearing-the-data-store)
+- [Removing Items and Clearing the Data Store](#removing-items-and-clearing-the-data-store)
 - [Storage Locations](#storage-locations)
 - [Using Sample Data](#using-sample-data)
+- [Logging](#logging)
 
 ### Default Storage Settings
 
 ```javascript
-import { DataContext } from "i45";
+import { DataContext, SampleData } from "i45";
 
 // Create an instance of the datacontext.
-// The default storage location is local storage using a default table name.
+// The default storage location is local storage using a default key.
 var dataContext = new DataContext();
 
-// Create an array of objects. This is a sample collection of books
-var book = { title: "The Road to React", author: "Robin Wieruch", id: 123456 };
-var bookTwo = {
-  title: "Creating NPM Package",
-  author: "Oluwatobi Sofela",
-  id: 123457,
-};
-
-var books = [];
-books.push(book);
-books.push(bookTwo);
+// Create an array of objects or values. This is a sample collection of astronomical terms.
+var terms = SampleData.Lists.Astronomy;
 
 // Persist the collection to the datastore, passing in array of objects.
-dataContext.store(books);
+dataContext.store(terms);
 ```
 
 ### Custom Storage Settings
 
 ```javascript
-import { DataContext, DatabaseSettings, StorageLocations } from "i45";
+import { DataContext, StorageLocations, SampleData } from "i45";
 
-// Create a database settings object with the desired values.
-// A primary key field name is required. This example uses "id".
-var settings = new DatabaseSettings(
-  "BookShelf",
-  1,
-  "Books",
-  "id",
-  StorageLocations.LocalStorage
-);
+// This creates a dataset with the name Books stored in sessionStorage.
+var context = new DataContext("Books", StorageLocations.SessionStorage);
 
-// Create an instance of the datacontext, passing in the database settings.
-var dataContext = new DataContext(settings);
+// create an array of objects. This is a sample collection of books.
+var books = SampleData.JsonData.Books;
 
-// create an array of objects. This is a sample collection of books
-var book = { title: "The Road to React", author: "Robin Wieruch", id: 123456 };
-var bookTwo = {
-  title: "Creating NPM Package",
-  author: "Oluwatobi Sofela",
-  id: 123457,
-};
-
-var books = [];
-books.push(book);
-books.push(bookTwo);
-
-// persist the collection to the datastore, passing in the database settings and the collection.
+// persist the collection to the datastore.
 dataContext.store(books);
-```
-
-### Multiple Data Contexts
-
-```javascript
-/* 
-A database settings object with a unique name for each database is required.
-
-See the examples below.
-*/
-
-import { DataContext, DatabaseSettings, StorageLocations } from "i45";
-
-// These settings can be used to create a data store for storing and retrieving books.
-var bookshelfSettings = new DatabaseSettings(
-  "BookShelf",
-  1,
-  "Books",
-  "id",
-  StorageLocations.LocalStorage
-);
-
-// These settings can be used to create a data store for storing and retrieving cities.
-var mapSettings = new DatabaseSettings(
-  "Map",
-  1,
-  "Cities",
-  "id",
-  StorageLocations.LocalStorage
-);
-
-// Create instances of the datacontext, passing in the relevant database settings. For Cookie storage, tableName is used as the cookie name.
-var booksContext = new DataContext(bookshelfSettings);
-var mapContext = new DataContext(mapSettings);
-
-// create an array of objects. This is a sample collection of books
-var book = { title: "The Road to React", author: "Robin Wieruch", id: 123456 };
-var bookTwo = {
-  title: "Creating NPM Package",
-  author: "Oluwatobi Sofela",
-  id: 123457,
-};
-
-var books = [];
-books.push(book);
-books.push(bookTwo);
-
-// create an array of cities for the mapContext.
-var c1 = { id: 1, name: "Seattle", state: "Washington", postalCode: "98109" };
-var c2 = {
-  id: 2,
-  name: "Bradfordsville",
-  state: "Kentucky",
-  postalCode: "40009",
-};
-
-var cities = [];
-cities.push(c1);
-cities.push(c2);
-
-// persist the objects using the associated context.
-booksContext.store(books);
-mapContext.store(cities);
-```
-
-### Using a single DataContext with multiple data stores.
-
-To manage multiple data stores with a single context, you must pass in the associated database settings object with each request.
-
-```javascript
-// Create a data store for storing and retrieving books.
-var bookshelfSettings = new DatabaseSettings(
-  "BookShelf",
-  1,
-  "Books",
-  "id",
-  StorageLocations.LocalStorage
-);
-
-// create an array of books.
-var book = { title: "The Road to React", author: "Robin Wieruch", id: 123456 };
-var bookTwo = {
-  title: "Creating NPM Package",
-  author: "Oluwatobi Sofela",
-  id: 123457,
-};
-
-var books = [];
-books.push(book);
-books.push(bookTwo);
-
-// Create a data store for storing and retrieving cities.
-var mapSettings = new DatabaseSettings(
-  "Map",
-  1,
-  "Cities",
-  "id",
-  StorageLocations.LocalStorage
-);
-
-// create an array of cities.
-var c1 = { id: 1, name: "Seattle", state: "Washington", postalCode: "98109" };
-var c2 = {
-  id: 2,
-  name: "Bradfordsville",
-  state: "Kentucky",
-  postalCode: "40009",
-};
-
-var cities = [];
-cities.push(c1);
-cities.push(c2);
-
-// Create a data context object
-var combinedDataStoreContext = new DataContext();
-
-/*
-Persist and retrieve the items using the combined data context passing in the database settings along with the collection.
-*/
-
-// An example uisng the bookshelf settings.
-combinedDataStoreContext.store(bookshelfSettings, books);
-var returnedBooks = combinedDataStoreContext.retrieve(bookshelfSettings);
-
-// An example using the map settings.
-combinedDataStoreContext.store(mapSettings, cities);
-var returnedCities = combinedDataStoreContext.retrieve(mapSettings);
 ```
 
 ### Retrieving Data
@@ -214,18 +58,13 @@ var returnedCities = combinedDataStoreContext.retrieve(mapSettings);
 The retrieve method on the data context returns a Promise. The example below demonstrates how to retrieve data using default database settings.
 
 ```javascript
-import { DataContext } from "i45";
+import { DataContext, SampleData } from "i45";
 
 var context = new DataContext();
 
-var books = [
-  { title: "The Road to React", author: "Robin Wieruch", id: 123456 },
-  { title: "Creating NPM Package", author: "Oluwatobi Sofela", id: 123457 },
-];
+context.store(SampleData.JsonData.States);
 
-context.store(books);
-
-context.retrieve().then((data) => console.log("Cookie Data", data));
+context.retrieve().then((data) => console.log("State data:", data));
 ```
 
 ### Retrieving Data from Custom Data Stores
@@ -233,69 +72,38 @@ context.retrieve().then((data) => console.log("Cookie Data", data));
 To retrieve data using customized settings, the database settings object must be provided.
 
 ```javascript
-import { DataContext, DatabaseSettings, StorageLocations } from "i45";
+import { DataContext, StorageLocations, SampleData } from "i45";
 
-// Create a database settings object with the desired values.
-// A primary key field name is required. This example uses "id".
-var settings = new DatabaseSettings(
-  "BookShelf",
-  1,
-  "Books",
-  "id",
-  StorageLocations.LocalStorage
-);
+// This creates a dataset with the name TriviaQuestions stored in sessionStorage.
+var context = new DataContext("Quiz", StorageLocations.SessionStorage);
 
-// Create an instance of the datacontext, passing in the database settings.
-var dataContext = new DataContext(settings);
-
-// create an array of objects. This is a sample collection of books
-var book = { title: "The Road to React", author: "Robin Wieruch", id: 123456 };
-var bookTwo = {
-  title: "Creating NPM Package",
-  author: "Oluwatobi Sofela",
-  id: 123457,
-};
-
-var books = [];
-books.push(book);
-books.push(bookTwo);
-
-// persist the collection to the datastore, passing in the database settings and the collection.
-dataContext.store(settings, books);
+// create an array of objects. This is a sample collection of trivia questions.
+dataContext.store("Questions", SampleData.JsonData.TriviaQuestions);
 
 // retrieve the data.
-datacontext.retrieve(settings);
+datacontext.retrieve("Questions");
 ```
 
-### Clearing the Data Store
+### Removing Items and Clearing the Data Store
 
-To delete an entry, call the clear() method on the data context.
+To delete an entry, call the remove() method on the data context. To clear all entries, call the clear() method.
 
 ```javascript
 import { DataContext } from "i45";
 
 var dataContext = new DataContext();
 
-// create an array of cities.
-var cities = [];
-cities.push({
-  id: 1,
-  name: "Seattle",
-  state: "Washington",
-  postalCode: "98109",
-});
-cities.push({
-  id: 2,
-  name: "Bradfordsville",
-  state: "Kentucky",
-  postalCode: "40009",
-});
+// create an array of countries.
+var countries = SampleData.KeyValueLists.Countries;
 
 // persist the collection
-dataContext.store(cities);
+dataContext.store("Countries", countries);
 
 // remove the item from storage.
-dataContext.clear();
+dataContext.remove("Countries");
+
+// remove all items from all storage locations.
+datacontext.clear();
 ```
 
 ### Storage Locations
@@ -326,3 +134,18 @@ var books = SampleData.JsonData.Books;
 
 console.log(books);
 ```
+
+### Logging
+
+The i45-jslogging package is integrated for data context logging. The enableLogging() method, which accepts true or false, will turn logging on or off.
+
+```javascript
+import { DataContext } from "i45";
+
+var context = new DataContext();
+context.enableLogging(true);
+```
+
+When enabled, messages are written both to the console as well as to localStorage ("eventLog").
+
+See [i45-jsLogger](https://www.npmjs.com/package/i45-jslogger) for full details on how the module works. The logger is not exposed in this module.

@@ -20,6 +20,8 @@ src/*.jsx
 
 *.config.js
 *.ico
+*.bak
+
 
 index.html
 

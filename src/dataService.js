@@ -14,16 +14,6 @@ import { SessionStorageService } from "./services/sessionStorageService.js";
 import { LocalStorageService } from "./services/localStorageService.js";
 
 /*************************************************************************************
- * Import the CookieStorage service in order to persist to document.cookie.
- ************************************************************************************/
-import { CookieService } from "./services/cookieService.js";
-
-/*************************************************************************************
- * Import StorageItem class for a strongly typed storage object.
- ************************************************************************************/
-import { StorageItem } from "./models/storageItem.js";
-
-/*************************************************************************************
  * Import the SampleData class to provide sample data for testing and development.
  ************************************************************************************/
 import { SampleData } from "./services/sampleDataService.js";
@@ -34,215 +24,395 @@ import { SampleData } from "./services/sampleDataService.js";
 import { StorageLocations } from "./models/storageLocations.js";
 
 /*************************************************************************************
- * Import the PersistenceTypes enum to provide strongly typed values for the persistence types.
+ * Import the Logger service for logging events and errors.
  ************************************************************************************/
-import { PersistenceTypes } from "./models/persistenceTypes.js";
-
-/**
- * Import the DatabaseSettings class to provide strongly typed settings for the database.
- */
-import { DatabaseSettings } from "./models/databaseSettings.js";
+import { Logger } from "i45-jslogger";
 
 /**
  * Export the DatabaseSettings and PersistenceTypes classes for use with this datacontext in consuming modules.
  */
-export { DatabaseSettings, PersistenceTypes, SampleData, StorageLocations };
+export { SampleData, StorageLocations };
 
 /**
  * @class DataContext
- * @property {string} databaseName - The name of the database.
- * @property {int} databaseVersion - The version of the database being used.
- * @property {string} tableName - The name of the table used to store data.
- * @property {string} primaryKeyField - The name of the field/property used to store key values.
- * @property {string} persistenceType - The type of persistence used to store data. (cookie, localStorage, sessionStorage)
+ * @property {string} dataStoreName - The name of the database.
  * @property {string} storageLocation - The type of persistence used to store data. (cookie, localStorage, sessionStorage)
- * @property {DatabaseSettings} databaseDefaults - The default settings for the database.
  *
  * @constructor
- * @param {DatabaseSettings} databaseSettings - The settings to be used for the database.
+ * @param {string} dataStoreName - The settings to be used for the database.
+ * @param {StorageLocation} storageLocation - The location for browser storage. Local storage or session storage.
  *
  * @example
- * let settings = new DatabaseSettings("MyDatabase", 1, "MyTable", "id", PersistenceTypes.localStorage);
- * let context = new DataContext(settings);
+ * let context = new DataContext();
  * let currentSettings = context.getCurrentSettings();
- * console.log(currentSettings.databaseName); // "MyDatabase"
- * console.log(currentSettings.databaseVersion); // 1
- * console.log(currentSettings.tableName); // "MyTable"
- * console.log(currentSettings.primaryKeyField); // "id"
- * console.log(currentSettings.persistenceType); // "localStorage"
+ * console.log(currentSettings.dataStoreName); // "Items"
+ * console.log(currentSettings.storageLocation); // "localStorage"
  */
 export class DataContext {
   // private fields
-  #databaseDefaults;
-  #databaseName;
-  #databaseVersion;
-  #tableName;
-  #primaryKeyField;
-  #persistenceType;
+  #dataStoreName;
   #storageLocation;
+  #dataStores;
 
-  constructor(databaseSettings) {
-    this.#databaseDefaults = new DatabaseSettings();
-    if (databaseSettings instanceof DatabaseSettings) {
-      this.#databaseDefaults = databaseSettings;
-      this.#databaseName = databaseSettings.databaseName;
-      this.#databaseVersion = databaseSettings.databaseVersion;
-      this.#tableName = databaseSettings.tableName;
-      this.#primaryKeyField = databaseSettings.primaryKeyField;
-      this.#persistenceType = databaseSettings.storageLocation;
-      this.#storageLocation = databaseSettings.storageLocation;
+  #loggerService;
+  #localStorageService;
+  #sessionStorageService;
 
-      this.#databaseDefaults.databaseName = databaseSettings.databaseName;
-      this.#databaseDefaults.databaseVersion = databaseSettings.databaseVersion;
-      this.#databaseDefaults.tableName = databaseSettings.tableName;
-      this.#databaseDefaults.primaryKeyField = databaseSettings.primaryKeyField;
-      this.#databaseDefaults.persistenceType = databaseSettings.persistenceType;
-      this.#databaseDefaults.storageLocation = databaseSettings.storageLocation;
-    } else {
-      this.#databaseName = this.#databaseDefaults.databaseName;
-      this.#databaseVersion = this.#databaseDefaults.databaseVersion;
-      this.#tableName = this.#databaseDefaults.tableName;
-      this.#primaryKeyField = this.#databaseDefaults.primaryKeyField;
-      this.#persistenceType = this.#databaseDefaults.storageLocation;
-      this.#storageLocation = this.#databaseDefaults.storageLocation;
-    }
+  #logActions = {
+    Store: "STORE",
+    Retrieve: "RETRIEVE",
+    Remove: "REMOVE",
+  };
+
+  #loggingEnabled = false;
+
+  constructor(
+    dataStoreName = "Items",
+    storageLocation = StorageLocations.LocalStorage
+  ) {
+    this.#dataStoreName = dataStoreName;
+    this.#storageLocation = storageLocation;
+    this.#dataStores = [];
+
+    this.#loggerService = new Logger();
+    this.#localStorageService = new LocalStorageService();
+    this.#sessionStorageService = new SessionStorageService();
+
     return this;
   }
 
   getCurrentSettings() {
     var settings = {
-      databaseName: this.#databaseName,
-      databaseVersion: this.#databaseVersion,
-      tableName: this.#tableName,
-      primaryKeyField: this.#primaryKeyField,
-      persistenceType: this.#persistenceType,
+      dataStoreName: this.#dataStoreName,
       storageLocation: this.#storageLocation,
     };
-    console.log("Current dataContext settings:", settings);
+
+    var currentLoggingSetting = this.#loggingEnabled;
+    this.#loggingEnabled = true;
+    this.#info(
+      `Current dataContext settings: ${window.location.href.split("/").pop()}`,
+      JSON.stringify(settings)
+    );
+    this.#loggingEnabled = currentLoggingSetting;
     return settings;
   }
 
-  // public properties
-  DatabaseSettings = function (settings) {
-    if (settings instanceof DatabaseSettings) this.#databaseDefaults = settings;
-    return this;
-  };
-
-  StorageLocation = function (value) {
-    if (typeof value !== "string")
-      throw new TypeError(`Expected a string, but got ${typeof value}`);
-    if (Object.values(StorageLocations).includes(value)) {
-      this.#storageLocation = value;
-      this.#persistenceType = value;
-      this.#databaseDefaults.StorageLocation = value;
-      this.#databaseDefaults.PersistenceType = value;
-    }
-    return this;
-  };
-
-  /************************************************
-   * @deprecated: Use StorageLocation() instead.
-   *************************************************/
-  PersistenceType = function (value) {
-    if (typeof value !== "string")
-      throw new TypeError(`Expected a string, but got ${typeof value}`);
-    if (Object.values(StorageLocations).includes(value)) {
-      this.#storageLocation = value;
-      this.#persistenceType = value;
-      this.#databaseDefaults.StorageLocation = value;
-      this.#databaseDefaults.PersistenceType = value;
-    }
-    return this;
-  };
-
-  TableName = function (value) {
-    if (typeof value !== "string")
-      throw new TypeError(`Expected a string, but got ${typeof value}`);
-    this.#tableName = value;
-    this.#databaseDefaults.TableName = value;
-    return this;
-  };
-
-  DatabaseName = function (value) {
-    if (typeof value !== "string")
-      throw new TypeError(`Expected a string, but got ${typeof value}`);
-    this.#databaseName = value;
-    this.#databaseDefaults.DatabaseName = value;
-    return this;
-  };
-
-  DatabaseVersion = function (value) {
-    if (typeof value !== "number")
-      throw new TypeError(`Expected a number, but got ${typeof value}`);
-    this.#databaseVersion = value;
-    this.#databaseDefaults.DatabaseVersion = value;
-    return this;
-  };
-
-  PrimaryKeyField = function (value) {
-    if (typeof value !== "string")
-      throw new TypeError(`Expected a string, but got ${typeof value}`);
-    this.#primaryKeyField = value;
-    this.#databaseDefaults.PrimaryKeyField = value;
-    return this;
-  };
-
-  async retrieve(databaseSettings) {
-    let data = [];
-
-    if (arguments.length === 0) {
-      data = await this.#retrieveItems();
-    } else if (
-      arguments.length === 1 &&
-      databaseSettings instanceof DatabaseSettings
-    ) {
-      data = await this.#retrieveItemsWithProperties(databaseSettings);
-    }
-    return data;
+  getData() {
+    var currentLoggingSetting = this.#loggingEnabled;
+    this.#loggingEnabled = true;
+    this.#info("Current data:", this.#dataStores);
+    this.#loggingEnabled = currentLoggingSetting;
+    return [...this.#dataStores];
   }
 
-  /*************************************************************************************
-   * Retrieves data from persistence layer and returns an array.
-   ************************************************************************************/
-  async #retrieveItems() {
-    let data = [];
-    let storageItem = new StorageItem();
-    storageItem.Name = this.#tableName;
+  enableLogging(value = false) {
+    if (typeof value !== "boolean") {
+      this.#error(`Expected a boolean, but got ${typeof value}`, true, [
+        {
+          data: value,
+        },
+      ]);
+    }
+    this.#loggingEnabled = value;
+    this.#info(`Logging ${value ? "enabled" : "disabled"}.`);
+    return this;
+  }
+
+  printLog() {
+    var currentLoggingSetting = this.#loggingEnabled;
+    this.#loggingEnabled = true;
+    this.#info("Printing log history");
+    console.log(this.#loggerService.getEvents());
+    this.#loggingEnabled = currentLoggingSetting;
+
+    return [...this.#loggerService.getEvents()];
+  }
+
+  // public properties
+  DataStoreName = function (dataStoreName = "Items") {
+    if (typeof dataStoreName !== "string")
+      this.#error(`Expected a string, but got ${typeof dataStoreName}`, true, [
+        { data: dataStoreName },
+      ]);
+
+    if (Object.values(StorageLocations).includes(dataStoreName))
+      this.#warn(
+        `The dataStoreName should not be one of the reserved storage locations: ${Object.values(
+          StorageLocations
+        ).join(", ")}.`
+      );
+    this.#dataStoreName = dataStoreName;
+    return this;
+  };
+
+  StorageLocation = function (storageLocation = StorageLocations.LocalStorage) {
+    if (typeof storageLocation !== "string")
+      this.#error(
+        `Expected a string, but got ${typeof storageLocation}`,
+        true,
+        [{ data: storageLocation }]
+      );
+    if (Object.values(StorageLocations).includes(storageLocation)) {
+      this.#storageLocation = storageLocation;
+    } else {
+      this.#error(
+        `The storageLocation must be one of the following: ${Object.values(
+          StorageLocations
+        ).join(", ")}. Found ${storageLocation}.`,
+        true,
+        [{ data: storageLocation }]
+      );
+    }
+    return this;
+  };
+
+  async store(
+    dataStoreName = this.#dataStoreName,
+    storageLocation = this.#storageLocation,
+    items = []
+  ) {
+    switch (arguments.length) {
+      case 1:
+        if (Array.isArray(arguments[0]) && arguments[0].length > 0) {
+          this.#storeItems(arguments[0]);
+        } else {
+          this.#error("Items must be an array of objects or values.", false, [
+            { items: arguments[0] },
+          ]);
+        }
+        break;
+      case 2:
+        if (
+          Array.isArray(arguments[1]) &&
+          arguments[1].length > 0 &&
+          typeof arguments[0] === "string" &&
+          !Object.values(StorageLocations).includes(arguments[0])
+        ) {
+          this.#storeItemsByDataStoreName(dataStoreName, items);
+        } else {
+          this.#error(
+            "Invalid Arguments Error",
+            `The dataStoreName must be a string and cannot be one of the reserved storage locations: ${Object.values(
+              StorageLocations
+            ).join(", ")}. Items must be an array of objects or values.`,
+            false,
+            [{ dataStoreName: arguments[0], items: arguments[1] }]
+          );
+        }
+        break;
+      case 3:
+        if (
+          Array.isArray(arguments[2]) &&
+          arguments[2].length > 0 &&
+          typeof arguments[0] === "string" &&
+          Object.values(StorageLocations).includes(arguments[1])
+        ) {
+          this.#storeItemsByStorageLocation(
+            dataStoreName,
+            storageLocation,
+            items
+          );
+        } else {
+          this.#error(
+            "Invalid Arguments Error",
+            `DataStoreName must be a string. StorageLocation must be one of the following: ${Object.values(
+              StorageLocations
+            ).join(", ")}. Items must be an array of objects or values.`,
+            false,
+            [
+              {
+                dataStoreName: arguments[0],
+                storageLocation: arguments[1],
+                items: arguments[2],
+              },
+            ]
+          );
+        }
+        break;
+      default:
+        this.#error("Invalid arguments at DataContext store()", true);
+    }
+    return this;
+  }
+
+  async #storeItems(items) {
+    var dataEvent = {};
 
     switch (this.#storageLocation) {
-      //retrieve from cookie service
-      case StorageLocations.CookieStore:
-        let cookieService = new CookieService();
-        storageItem.Value = await cookieService.retrieve(this.#tableName);
-        if (
-          storageItem.Value !== null &&
-          storageItem.Value !== undefined &&
-          storageItem.Value !== "" &&
-          storageItem.Value.length > 0
-        )
-          try {
-            data = JSON.parse(storageItem.Value);
-          } catch (error) {
-            console.warn(
-              "Error parsing JSON from cookie data:",
-              error,
-              storageItem
-            );
-          }
+      //persist to LocalStorage service
+      case StorageLocations.LocalStorage:
+        this.#localStorageService.save(
+          this.#dataStoreName,
+          JSON.stringify(items)
+        );
+        this.#logDataEntry(
+          this.#logActions.Store,
+          this.#dataStoreName,
+          StorageLocations.LocalStorage,
+          items
+        );
         break;
 
+      //persist to sessionStorage service
+      case StorageLocations.SessionStorage:
+        this.#sessionStorageService.save(
+          this.#dataStoreName,
+          JSON.stringify(items)
+        );
+        this.#logDataEntry(
+          this.#logActions.Store,
+          this.#dataStoreName,
+          StorageLocations.SessionStorage,
+          items
+        );
+        break;
+
+      default:
+        break;
+    }
+  }
+
+  async #storeItemsByDataStoreName(dataStoreName, items) {
+    switch (this.#storageLocation) {
+      //persist to LocalStorage service
+      case StorageLocations.LocalStorage:
+        this.#localStorageService.save(dataStoreName, JSON.stringify(items));
+        this.#logDataEntry(
+          this.#logActions.Store,
+          dataStoreName,
+          StorageLocations.LocalStorage,
+          items
+        );
+        break;
+
+      //persist to sessionStorage service
+      case StorageLocations.SessionStorage:
+        this.#sessionStorageService.save(dataStoreName, JSON.stringify(items));
+        this.#logDataEntry(
+          this.#logActions.Store,
+          dataStoreName,
+          StorageLocations.SessionStorage,
+          items
+        );
+        break;
+
+      default:
+        break;
+    }
+  }
+
+  async #storeItemsByStorageLocation(dataStoreName, storageLocation, items) {
+    switch (storageLocation) {
+      //persist to LocalStorage service
+      case StorageLocations.LocalStorage:
+        this.#localStorageService.save(dataStoreName, JSON.stringify(items));
+        this.#logDataEntry(
+          this.#logActions.Store,
+          dataStoreName,
+          StorageLocations.LocalStorage,
+          items
+        );
+        break;
+
+      //persist to sessionStorage service
+      case StorageLocations.SessionStorage:
+        this.#sessionStorageService.save(dataStoreName, JSON.stringify(items));
+        this.#logDataEntry(
+          this.#logActions.Store,
+          dataStoreName,
+          StorageLocations.SessionStorage,
+          items
+        );
+        break;
+
+      default:
+        break;
+    }
+  }
+
+  async retrieve(
+    dataStoreName = this.#dataStoreName,
+    storageLocation = this.#storageLocation
+  ) {
+    let data = [];
+
+    switch (arguments.length) {
+      case 0:
+        data = await this.#retrieveItems();
+        break;
+      case 1:
+        if (typeof arguments[0] === "string") {
+          data = await this.#retrieveItemsByDataStoreName(dataStoreName);
+        } else {
+          this.#error(
+            `Invalid Arguments Error. Expected a string but found type ${typeof arguments[0]}.`,
+            false,
+            [{ data: arguments[0] }]
+          );
+        }
+        break;
+      case 2:
+        if (
+          typeof arguments[0] === "string" &&
+          Object.values(StorageLocations).includes(storageLocation)
+        ) {
+          data = await this.#retrieveItemsByStorageLocation(
+            dataStoreName,
+            storageLocation
+          );
+        } else {
+          this.#error(
+            `Invalid Arguments Error. DataStoreName must be a string and cannot be one of the reserved storage locations: ${Object.values(
+              StorageLocations
+            ).join(
+              ", "
+            )}. StorageLocation must be one of the following: ${Object.values(
+              StorageLocations
+            ).join(
+              ", "
+            )}. Found types ${typeof arguments[0]} and ${typeof arguments[1]}.`,
+            false,
+            [{ dataStoreName: arguments[0], storageLocation: arguments[1] }]
+          );
+        }
+        break;
+      default:
+        break;
+    }
+    return data;
+  }
+
+  async #retrieveItems() {
+    let data = [];
+    switch (this.#storageLocation) {
       //retrieve from localStorage service
       case StorageLocations.LocalStorage:
-        var localStorageService = new LocalStorageService();
-        storageItem = localStorageService.retrieve(this.#databaseName);
-        if (storageItem != null) data = JSON.parse(storageItem.Value);
+        var result = this.#localStorageService.retrieve(this.#dataStoreName);
+        try {
+          data = result ? JSON.parse(result.Value) : [];
+        } catch (e) {
+          this.#error(
+            "Local Storage Error",
+            "Unable to retrieve data from local storage service.",
+            false,
+            [{ Details: e, Result: result }]
+          );
+        }
         break;
 
       //retrieve from sessionStorage service
       case StorageLocations.SessionStorage:
-        var sessionStorageService = new SessionStorageService();
-        storageItem = sessionStorageService.retrieve(this.#databaseName);
-        if (storageItem != null) data = JSON.parse(storageItem.Value);
+        var result = this.#sessionStorageService.retrieve(this.#dataStoreName);
+        try {
+          data = result ? JSON.parse(result.Value) : [];
+        } catch (e) {
+          this.#error(
+            "Session Storage Error",
+            "Unable to retrieve data from session storage service.",
+            false,
+            [{ Details: e, Result: result }]
+          );
+        }
         break;
 
       default:
@@ -251,224 +421,123 @@ export class DataContext {
     return data;
   }
 
-  /*************************************************************************************
-   * Retrieves data from persistence store and returns an array.
-   * DatabaseProperties: The database settings to be used when storing the items.
-   ************************************************************************************/
-  async #retrieveItemsWithProperties(databaseSettings) {
+  async #retrieveItemsByDataStoreName(dataStoreName) {
     let data = [];
-    let storageItem = new StorageItem();
-
-    switch (databaseSettings.storageLocation) {
-      //retrieve from cookie service
-      case StorageLocations.CookieStore:
-        let cookieService = new CookieService();
-        storageItem = cookieService.retrieve(databaseSettings.tableName);
-        if (storageItem != null) data = JSON.parse(storageItem.Value);
-        break;
-
-      //retrieve from LocalStorage service
+    switch (this.#storageLocation) {
+      //retrieve from localStorage service
       case StorageLocations.LocalStorage:
-        var localStorageService = new LocalStorageService();
-        storageItem = localStorageService.retrieve(
-          databaseSettings.databaseName
-        );
-        if (storageItem != null) data = JSON.parse(storageItem.Value);
+        var result = this.#localStorageService.retrieve(dataStoreName);
+        try {
+          data = result ? JSON.parse(result.Value) : [];
+        } catch (e) {
+          this.#error(
+            "Local Storage Error",
+            "Unable to retrieve data from local storage service.",
+            false,
+            [{ "Details:": e, "Result:": result }]
+          );
+        }
         break;
 
       //retrieve from sessionStorage service
       case StorageLocations.SessionStorage:
-        var sessionStorageService = new SessionStorageService();
-        storageItem = sessionStorageService.retrieve(
-          databaseSettings.databaseName
-        );
-        if (storageItem != null) data = JSON.parse(storageItem.Value);
+        var result = this.#sessionStorageService.retrieve(dataStoreName);
+        try {
+          data = result ? JSON.parse(result.Value) : [];
+        } catch (e) {
+          this.#error(
+            "Session Storage Error",
+            "Unable to retrieve data from session storage service.",
+            false,
+            [{ "Details:": e, "Result:": result }]
+          );
+        }
         break;
 
       default:
         break;
     }
-
     return data;
   }
 
-  /*************************************************************************************
-   * @deprecated Use store() instead.
-   * **********************************************************************************/
-  async persist(databaseSettings, items) {
-    switch (arguments.length) {
-      case 1:
-        if (Array.isArray(arguments[0])) {
-          this.#persistItems(arguments[0]);
-        } else {
-          console.error(
-            "Items must be an array of objects or values.",
-            arguments[0]
-          );
-        }
-        break;
-      case 2:
-        if (
-          Array.isArray(arguments[1]) &&
-          arguments[0] instanceof DatabaseSettings
-        ) {
-          this.#persistItemsWithProperties(databaseSettings, items);
-        } else {
-          console.error(
-            "Items must be an array of objects or values. DatabaseProperties must be an instance of DatabaseSettings."
-          );
-        }
-        break;
-      default:
-        console.warn(
-          "Invalid arguments. Please provide databaseProperties as an instance of DatabaseSettings and/or an array of items."
-        );
-        break;
-    }
-    return this;
-  }
-
-  async store(databaseSettings, items) {
-    switch (arguments.length) {
-      case 1:
-        if (Array.isArray(arguments[0])) {
-          this.#persistItems(arguments[0]);
-        } else {
-          console.error(
-            "Items must be an array of objects or values.",
-            arguments[0]
-          );
-        }
-        break;
-      case 2:
-        if (
-          Array.isArray(arguments[1]) &&
-          arguments[0] instanceof DatabaseSettings
-        ) {
-          this.#persistItemsWithProperties(databaseSettings, items);
-        } else {
-          console.error(
-            "Items must be an array of objects or values. DatabaseProperties must be an instance of DatabaseSettings."
-          );
-        }
-        break;
-      default:
-        console.warn(
-          "Invalid arguments. Please provide databaseProperties as an instance of DatabaseSettings and/or an array of items."
-        );
-        break;
-    }
-    return this;
-  }
-
-  /*************************************************************************************
-   * Saves items to the data store based on properties set in service initialization.
-   * Items: The array of objects or values to be stored.
-   ************************************************************************************/
-  async #persistItems(items) {
-    switch (this.#persistenceType) {
-      //persist to Cookie service
-      case StorageLocations.CookieStore:
-        let cookieService = new CookieService();
-        let cookieData = JSON.stringify(items);
-        cookieService.save(this.#tableName, cookieData);
-        break;
-
-      //persist to LocalStorage service
+  async #retrieveItemsByStorageLocation(dataStoreName, storageLocation) {
+    let data = [];
+    switch (storageLocation) {
+      //retrieve from localStorage service
       case StorageLocations.LocalStorage:
-        var localStorageService = new LocalStorageService();
-        localStorageService.save(this.#databaseName, JSON.stringify(items));
+        var result = this.#localStorageService.retrieve(dataStoreName);
+        try {
+          data = result ? JSON.parse(result.Value) : [];
+        } catch (e) {
+          this.#error(
+            "Local Storage Error",
+            "Unable to retrieve data from local storage service.",
+            false,
+            [{ "Details:": e, "Result:": result }]
+          );
+        }
         break;
 
-      //persist to sessionStorage service
+      //retrieve from sessionStorage service
       case StorageLocations.SessionStorage:
-        var sessionStorageService = new SessionStorageService();
-        sessionStorageService.save(this.#databaseName, JSON.stringify(items));
+        var result = this.#sessionStorageService.retrieve(dataStoreName);
+        try {
+          data = result ? JSON.parse(result.Value) : [];
+        } catch (e) {
+          this.#error(
+            "Session Storage Error",
+            "Unable to retrieve data from session storage service.",
+            false,
+            [{ "Details:": e, "Result:": result }]
+          );
+        }
         break;
 
       default:
         break;
     }
+    return data;
   }
 
-  /*************************************************************************************
-   * Saves items to the data store based on database properties object that is passed in.
-   * DatabaseProperties: The database settings to be used when storing the items.
-   * Items: The array of objects or values to be stored.
-   ************************************************************************************/
-  async #persistItemsWithProperties(databaseSettings, items) {
-    switch (databaseSettings.storageLocation) {
-      //persist to Cookie service
-      case StorageLocations.CookieStore:
-        let cookieService = new CookieService();
-        let cookieData = JSON.stringify(items);
-        cookieService.save(databaseSettings.tableName, cookieData);
-        break;
-
-      //persist to LocalStorage service
-      case StorageLocations.LocalStorage:
-        var localStorageService = new LocalStorageService();
-        localStorageService.save(
-          databaseSettings.databaseName,
-          JSON.stringify(items)
-        );
-        break;
-
-      //persist to sessionStorage service
-      case StorageLocations.SessionStorage:
-        var sessionStorageService = new SessionStorageService();
-        sessionStorageService.save(
-          databaseSettings.databaseName,
-          JSON.stringify(items)
-        );
-        break;
-
-      default:
-        break;
-    }
-  }
-
-  async clear(databaseSettings) {
+  async remove(
+    dataStoreName = this.#dataStoreName,
+    storageLocation = this.#storageLocation
+  ) {
     switch (arguments.length) {
       case 0:
         this.#removeItems();
         break;
       case 1:
-        if (databaseSettings instanceof DatabaseSettings) {
-          this.#removeItemsWithProperties(databaseSettings);
+        if (typeof arguments[0] === "string") {
+          this.#removeItemsByDataStoreName(dataStoreName);
         } else {
-          console.error(
-            "DatabaseProperties must be an instance of DatabaseSettings."
+          this.#error(
+            `Invalid Arguments Error. DataStoreName must be a string. Found ${typeof arguments[0]}.`
+          );
+        }
+        break;
+      case 2:
+        if (
+          typeof arguments[0] === "string" &&
+          Object.values(StorageLocations).includes(arguments[1])
+        ) {
+          this.#removeItemsByStorageLocation(dataStoreName, storageLocation);
+        } else {
+          this.#error(
+            `Invalid Arguments Error. DataStoreName must be a string and cannot be one of the reserved storage locations: ${Object.values(
+              StorageLocations
+            ).join(
+              ", "
+            )}. StorageLocation must be one of the following: ${Object.values(
+              StorageLocations
+            ).join(
+              ", "
+            )}. Found ${typeof arguments[0]} and ${typeof arguments[1]}.`
           );
         }
         break;
       default:
-        console.warn(
-          "Invalid arguments. Please provide databaseProperties as an instance of DatabaseSettings."
-        );
-        break;
-    }
-    return this;
-  }
-
-  async remove(databaseSettings) {
-    switch (arguments.length) {
-      case 0:
-        this.#removeItems();
-        break;
-      case 1:
-        if (databaseSettings instanceof DatabaseSettings) {
-          this.#removeItemsWithProperties(databaseSettings);
-        } else {
-          console.error(
-            "DatabaseProperties must be an instance of DatabaseSettings."
-          );
-        }
-        break;
-      default:
-        console.warn(
-          "Invalid arguments. Please provide databaseProperties as an instance of DatabaseSettings."
-        );
+        this.#warn("Invalid arguments.");
         break;
     }
     return this;
@@ -476,22 +545,41 @@ export class DataContext {
 
   async #removeItems() {
     switch (this.#storageLocation) {
-      //remove from Cookie service
-      case StorageLocations.CookieStore:
-        let cookieService = new CookieService();
-        cookieService.remove(this.#tableName);
-        break;
-
       //remove from LocalStorage service
       case StorageLocations.LocalStorage:
-        var localStorageService = new LocalStorageService();
-        localStorageService.remove(this.#databaseName);
+        var items = this.#localStorageService.retrieve(this.#dataStoreName);
+        if (items && items.length > 0) {
+          this.#localStorageService.remove(this.#dataStoreName);
+        } else {
+          this.#warn(
+            `No items found in LocalStorage for ${this.#dataStoreName}`
+          );
+          return;
+        }
+        this.#logDataEntry(
+          this.#logActions.Remove,
+          this.#dataStoreName,
+          this.#storageLocation
+        );
         break;
 
       //remove from sessionStorage service
       case StorageLocations.SessionStorage:
-        var sessionStorageService = new SessionStorageService();
-        sessionStorageService.remove(this.#databaseName);
+        var items = this.#sessionStorageService.retrieve(this.#dataStoreName);
+        if (items && items.length > 0) {
+          this.#sessionStorageService.remove(this.#dataStoreName);
+        } else {
+          this.#warn(
+            `No items found in SessionStorage for ${this.#dataStoreName}`
+          );
+          return;
+        }
+        this.#logDataEntry(
+          this.#logActions.Remove,
+          this.#dataStoreName,
+          this.#storageLocation
+        );
+
         break;
 
       default:
@@ -499,28 +587,151 @@ export class DataContext {
     }
   }
 
-  async #removeItemsWithProperties(databaseSettings) {
-    switch (databaseSettings.storageLocation) {
-      //remove from Cookie service
-      case StorageLocations.CookieStore:
-        let cookieService = new CookieService();
-        cookieService.remove(databaseSettings.tableName);
-        break;
-
+  async #removeItemsByDataStoreName(dataStoreName) {
+    switch (this.#storageLocation) {
       //remove from LocalStorage service
       case StorageLocations.LocalStorage:
-        var localStorageService = new LocalStorageService();
-        localStorageService.remove(databaseSettings.databaseName);
+        var items = this.#localStorageService.retrieve(dataStoreName);
+        if (items && items.length > 0) {
+          this.#localStorageService.remove(dataStoreName);
+        } else {
+          this.#warn(`No items found in LocalStorage for ${dataStoreName}`);
+          return;
+        }
+        this.#logDataEntry(
+          this.#logActions.Remove,
+          dataStoreName,
+          this.#storageLocation
+        );
+
         break;
 
       //remove from sessionStorage service
       case StorageLocations.SessionStorage:
-        var sessionStorageService = new SessionStorageService();
-        sessionStorageService.remove(databaseSettings.databaseName);
+        var items = this.#sessionStorageService.retrieve(dataStoreName);
+        if (items && items.length > 0) {
+          this.#sessionStorageService.remove(dataStoreName);
+        } else {
+          this.#warn(`No items found in SessionStorage for ${dataStoreName}`);
+          return;
+        }
+        this.#logDataEntry(
+          this.#logActions.Remove,
+          dataStoreName,
+          this.#storageLocation
+        );
         break;
 
       default:
         break;
     }
+  }
+
+  async #removeItemsByStorageLocation(dataStoreName, storageLocation) {
+    switch (storageLocation) {
+      //remove from LocalStorage service
+      case StorageLocations.LocalStorage:
+        var items = this.#localStorageService.retrieve(dataStoreName);
+        if (items && items.length > 0) {
+          this.#localStorageService.remove(dataStoreName);
+        } else {
+          this.#warn(`No items found in LocalStorage for ${dataStoreName}`);
+          return;
+        }
+        this.#logDataEntry(
+          this.#logActions.Remove,
+          dataStoreName,
+          storageLocation
+        );
+
+        break;
+
+      //remove from sessionStorage service
+      case StorageLocations.SessionStorage:
+        var items = this.#sessionStorageService.retrieve(dataStoreName);
+        if (items && items.length > 0) {
+          this.#sessionStorageService.remove(dataStoreName);
+        } else {
+          this.#warn(`No items found in SessionStorage for ${dataStoreName}`);
+          return;
+        }
+        this.#logDataEntry(
+          this.#logActions.Remove,
+          dataStoreName,
+          storageLocation
+        );
+
+        break;
+
+      default:
+        break;
+    }
+  }
+
+  async #logDataEntry(action, dataStoreName, storageLocation, items) {
+    //TODO: Implement logging functionality as a separate logging service using a ServiceWorker and Singleton pattern.
+    const timestamp = new Date().toISOString();
+    var logEntry = {};
+    switch (action) {
+      case "STORE":
+        logEntry = {
+          dataStoreName: dataStoreName,
+          storageLocation: storageLocation,
+          action: action,
+          modifiedOn: timestamp,
+          value: items,
+        };
+        this.#dataStores.push(logEntry);
+        if (this.#loggingEnabled) {
+          this.#info(`Data stored as ${dataStoreName} in ${storageLocation}`);
+        }
+        break;
+      case "RETRIEVE":
+        // Implement retrieve action logging
+        if (this.#loggingEnabled) {
+          this.#info(
+            `Retrieved data as ${dataStoreName} from ${storageLocation}`
+          );
+        }
+        break;
+      case "REMOVE":
+        this.#dataStores = this.#dataStores.filter(
+          (entry) => entry.dataStoreName !== dataStoreName
+        );
+        if (this.#loggingEnabled) {
+          this.#info(`Removed data ${dataStoreName} from ${storageLocation}`);
+        }
+        break;
+      default:
+        this.#warn(`Unknown action type: ${action}`);
+        break;
+    }
+  }
+
+  #warn(message, ...args) {
+    if (this.#loggingEnabled) {
+      this.#loggerService.warn(message, ...args);
+    }
+  }
+
+  #error(message, throwError = false, ...args) {
+    if (this.#loggingEnabled) {
+      this.#loggerService.error(message, ...args);
+    }
+    if (throwError) {
+      throw new Error(message, ...args);
+    }
+  }
+
+  #info(message, ...args) {
+    if (this.#loggingEnabled) {
+      this.#loggerService.info(message, ...args);
+    }
+  }
+
+  async clear() {
+    this.#localStorageService.clear();
+    this.#sessionStorageService.clear();
+    return this;
   }
 }
