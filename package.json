@@ -9,7 +9,7 @@
     "minor": "npm version minor",
     "major": "npm version major",
     "build-windows": "xcopy src\\* dist\\ /s /e",
-    "build-linux": "cp -r src/data dist/ && cp -r src/models dist/ && cp -r src/services dist/ && cp src/dataService.js dist/dataService.js",
+    "build-linux": "cp -r src/models dist/ && cp -r src/services dist/ && cp src/dataService.js dist/dataService.js",
     "build-all": "npm run build-linux && npm run build-windows",
     "checkin": "git add . && git commit -a -m \"See CHANGES.md for a list of Revisions.\" ",
     "link": "npm run build-all && npm link",
