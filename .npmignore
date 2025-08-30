@@ -25,3 +25,7 @@
 *.html
 *.ico
 *.bak
+*.md.bak
+*.tmp
+*.temp
+*.swp

@@ -16,7 +16,7 @@ import { LocalStorageService } from "./services/localStorageService.js";
 /*************************************************************************************
  * Import the SampleData class to provide sample data for testing and development.
  ************************************************************************************/
-import { SampleData } from "./services/sampleDataService.js";
+import { SampleData } from "i45-sample-data";
 
 /*************************************************************************************
  * Import StorageLocations enum for strongly typed storage location values.
@@ -26,12 +26,12 @@ import { StorageLocations } from "./models/storageLocations.js";
 /*************************************************************************************
  * Import the Logger service for logging events and errors.
  ************************************************************************************/
-import { Logger } from "i45-jslogger";
+import { Logger, iLogger, iLoggerValidator } from "i45-jslogger";
 
 /**
  * Export the DatabaseSettings and PersistenceTypes classes for use with this datacontext in consuming modules.
  */
-export { SampleData, StorageLocations };
+export { SampleData, StorageLocations, iLogger, iLoggerValidator, Logger };
 
 /**
  * @class DataContext
@@ -119,6 +119,13 @@ export class DataContext {
   }
 
   printLog() {
+    if (
+      !Object.hasOwn(this.#loggerService, "getEvents") ||
+      typeof this.#loggerService.getEvents !== "function"
+    ) {
+      this.#warn("Logger does not implement getEvents() method.");
+      return [];
+    }
     var currentLoggingSetting = this.#loggingEnabled;
     this.#loggingEnabled = true;
     this.#info("Printing log history");
@@ -126,6 +133,27 @@ export class DataContext {
     this.#loggingEnabled = currentLoggingSetting;
 
     return [...this.#loggerService.getEvents()];
+  }
+
+  registerLogger(myLogger) {
+    if (iLoggerValidator.isValid(myLogger, iLogger)) {
+      this.#loggerService = myLogger;
+
+      var currentLoggingSetting = this.#loggingEnabled;
+      this.enableLogging(true);
+      this.#info("New logger registered successfully.");
+      this.#loggingEnabled = currentLoggingSetting;
+    } else {
+      var currentLoggingSetting = this.#loggingEnabled;
+      this.#loggingEnabled = true;
+      this.#warn(
+        "The provided logger does not implement the iLogger interface. Using the default logger instead.",
+        true,
+        iLogger
+      );
+      this.#loggingEnabled = currentLoggingSetting;
+    }
+    return this;
   }
 
   // public properties
@@ -709,13 +737,13 @@ export class DataContext {
   }
 
   #warn(message, ...args) {
-    if (this.#loggingEnabled) {
+    if (this.#loggingEnabled && this.#loggerService) {
       this.#loggerService.warn(message, ...args);
     }
   }
 
   #error(message, throwError = false, ...args) {
-    if (this.#loggingEnabled) {
+    if (this.#loggingEnabled && this.#loggerService) {
       this.#loggerService.error(message, ...args);
     }
     if (throwError) {
@@ -724,7 +752,7 @@ export class DataContext {
   }
 
   #info(message, ...args) {
-    if (this.#loggingEnabled) {
+    if (this.#loggingEnabled && this.#loggerService) {
       this.#loggerService.info(message, ...args);
     }
   }

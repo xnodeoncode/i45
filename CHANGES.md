@@ -105,3 +105,23 @@ console.log(books);
 - Logging is turned on/off via the enableLogging() method.
 - Added default values to public method parameters to improve error handling.
 - Deprecated methods removed.
+
+## v2.1.0
+
+#### August 28, 2025
+
+- Added custom logging support via the registerLogger() method.
+- The Logger must implement three of the browser console methods.
+  - info(), warn(), and error().
+
+```javascript
+import { DataContext } from "i45";
+
+// an instance of a logger is needed. it may be a class or any other module.
+var myLogger = new CustomLogger();
+
+var context = new DataContext();
+context.registerLogger(myLogger);
+```
+
+- Upon successful registration, DataContext messages will be routed to the custom router.

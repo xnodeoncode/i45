@@ -49,6 +49,7 @@
     "vite": "^7.0.4"
   },
   "dependencies": {
-    "i45-jslogger": "^1.0.0"
+    "i45-jslogger": "^1.0.0",
+    "i45-sample-data": "^2.1.1"
   }
 }
