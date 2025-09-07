@@ -34,7 +34,7 @@ var dataContext = new DataContext();
 // Create an array of objects or values. This is a sample collection of astronomical terms.
 var terms = SampleData.Lists.Astronomy;
 
-// Save the collection to localStorage, passing in array of objects.
+// Save the collection to localStorage, passing in an array of objects/values.
 dataContext.store(terms);
 ```
 
@@ -43,10 +43,10 @@ dataContext.store(terms);
 ```javascript
 import { DataContext, StorageLocations, SampleData } from "i45";
 
-// This creates a dataset with the name Books stored in sessionStorage.
+// This creates a dataset with the name Books to be stored in sessionStorage.
 var context = new DataContext("Books", StorageLocations.SessionStorage);
 
-// create an array of objects. This is a sample collection of books using the SampleData module.
+// create an array of objects/values. This is a sample collection of books using the SampleData module.
 var books = SampleData.JsonData.Books;
 
 // save the collection to session storage.
@@ -63,7 +63,7 @@ import { DataContext, SampleData } from "i45";
 // create an instance of data context.
 var context = new DataContext();
 
-// store the data, in this case, in local storage.
+// store the data, in this case, the default local storage is used.
 context.store(SampleData.JsonData.States);
 
 // retrieve the data and log it to the console.
@@ -72,19 +72,21 @@ context.retrieve().then((data) => console.log("State data:", data));
 
 ### Retrieving Data from Custom Data Stores
 
-To retrieve data using customized settings, call the retrieve() method passing in the DataStoreName(key).
+To retrieve data using customized settings, call the retrieve() method passing in the DataStoreName or key.
 
 ```javascript
 import { DataContext, StorageLocations, SampleData } from "i45";
 
-// This creates a dataset with the name Quiz stored in sessionStorage.
-var context = new DataContext("Quiz", StorageLocations.SessionStorage);
+// This creates a dataset with the name Quiz to be stored in sessionStorage.
+var context = new DataContext("Questions", StorageLocations.SessionStorage);
 
-// create an array of objects. This is a sample collection of trivia questions.
-dataContext.store("Questions", SampleData.JsonData.TriviaQuestions);
+// Store an array of objects/values. This is a sample collection of trivia questions.
+dataContext.store(SampleData.JsonData.TriviaQuestions);
 
 // retrieve the data.
-datacontext.retrieve("Questions");
+datacontext.retrieve("Questions").then((data) => {
+  console.log(data);
+});
 ```
 
 In the case of multiple datasets in multiple locations, pass in both the data store name and the location, in order to retrieve the correct data.
@@ -116,6 +118,7 @@ dataContext.store("Countries", countries);
 dataContext.remove("Countries");
 
 // removes all items from all storage locations.
+// *** WARNING *** calling clear() will clears all entries.
 datacontext.clear();
 ```
 
@@ -169,27 +172,24 @@ context.enableLogging(true);
 
 When enabled, messages are written both to the console as well as to localStorage as"eventLog".
 
-See [i45-jsLogger](https://www.npmjs.com/package/i45-jslogger) for full details on how the module works. The logger is not exposed in this module.
+See [i45-jsLogger](https://www.npmjs.com/package/i45-jslogger) for full details on how the module works.
 
 #### Using a Custom Logger
 
-The DataContext can accept a custom logger which implements the ILogger Interface:
+The DataContext can accept a custom logger, such as a file system logger, as long as the following methods are implemented:
 
-```javascript
-export const ILogger = {
-  info: (message) => {},
-  warn: (message) => {},
-  error: (message) => {},
-  getEvents: () => {},
-};
-```
+- log()
+- info(),
+- warn(),
+- error()
 
 ##### Custom Logger Example
 
-Upon succesfull registration, messages (info, warnings, errors) from the DataContext will be sent to the custom logger.
+Multiple clients can be added using this method., messages (info, warnings, errors) from the DataContext will be sent to each of the clients.
 
 ```javascript
 import { DataContext } from "i45";
+import { CustomLogger } from "some-package"; // example import
 
 // get an instance of the custom logger. This example assumes the use of a class.
 var myLogger = new CustomLogger();
@@ -198,8 +198,8 @@ var myLogger = new CustomLogger();
 const context = new DataContext();
 
 // Register the custom logger.
-context.registerLogger(myLogger);
+context.addClient(myLogger);
 
 // Enable logging.
-context.enableLogging(true);
+context.enableLogging = true;
 ```

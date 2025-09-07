@@ -125,3 +125,13 @@ context.registerLogger(myLogger);
 ```
 
 - Upon successful registration, DataContext messages will be routed to the custom router.
+
+## v2.2.0
+
+### September 6, 2025
+
+- Deprecated enableLogging, DataStoreName() and StorageLocations() methods.
+- Added loggingEnabled, dataStoreName, and storageLocations properties with validation.
+- Deprecated registerLogger() method. Added addClient() method.
+- Allows for multiple clients to be added.
+- Updated documentation.

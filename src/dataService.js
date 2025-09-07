@@ -81,6 +81,20 @@ export class DataContext {
     return this;
   }
 
+  get loggingEnabled() {
+    return this.#loggingEnabled;
+  }
+  set loggingEnabled(value) {
+    if (typeof value !== "boolean") {
+      this.#error(`Expected a boolean, but got ${typeof value}`, true, [
+        {
+          data: value,
+        },
+      ]);
+    }
+    this.#loggingEnabled = value;
+  }
+
   getCurrentSettings() {
     var settings = {
       dataStoreName: this.#dataStoreName,
@@ -105,6 +119,13 @@ export class DataContext {
     return [...this.#dataStores];
   }
 
+  /****************************************************************
+   * Enables or disables logging for the DataContext instance.
+   * @deprecated This method will be removed in future versions. Use the loggingEnabled property instead.
+   * @param {boolean} value - Set to true to enable logging, false to disable.
+   * @returns {DataContext} - The current DataContext instance.
+   ***************************************************************
+   */
   enableLogging(value = false) {
     if (typeof value !== "boolean") {
       this.#error(`Expected a boolean, but got ${typeof value}`, true, [
@@ -135,6 +156,15 @@ export class DataContext {
     return [...this.#loggerService.getEvents()];
   }
 
+  /*****************************************************************
+   * Registers a custom logger that implements the iLogger interface.
+   * If the provided logger does not implement the interface, the
+   * default logger will be used instead.
+   * @deprecated This method will be removed in future versions. Use addClient() instead.
+   * @param {iLogger} myLogger - The custom logger to be used.
+   * @returns {DataContext} - The current DataContext instance.
+   ****************************************************************
+   */
   registerLogger(myLogger) {
     if (iLoggerValidator.isValid(myLogger, iLogger)) {
       this.#loggerService = myLogger;
@@ -156,7 +186,86 @@ export class DataContext {
     return this;
   }
 
+  /*****************************************************************
+   * Adds a client that implements the iLogger interface to the
+   * current logger service. If the provided client does not
+   * implement the interface, a warning will be logged.
+   * @param {object} client - The client to be added.
+   * @returns {DataContext} - The current DataContext instance.
+   ****************************************************************
+   */
+  addClient(client) {
+    if (client && typeof client === "object") {
+      try {
+        this.#loggerService.addClient(client);
+
+        var currentLoggingSetting = this.#loggingEnabled;
+        this.#loggingEnabled = true;
+        this.#info("New logger registered successfully from client.");
+        this.#loggingEnabled = currentLoggingSetting;
+      } catch (e) {
+        this.#error("Error adding client to logger service.", false, [
+          { Details: e },
+        ]);
+      }
+    } else {
+      var currentLoggingSetting = this.#loggingEnabled;
+      this.#loggingEnabled = true;
+      this.#warn(`Expected an object for client, but got ${typeof client}.`);
+      this.#loggingEnabled = currentLoggingSetting;
+    }
+    return this;
+  }
+
   // public properties
+  get dataStoreName() {
+    return this.#dataStoreName;
+  }
+
+  set dataStoreName(value) {
+    if (typeof value !== "string")
+      this.#error(`Expected a string, but got ${typeof value}`, true, [
+        { data: value },
+      ]);
+
+    if (Object.values(StorageLocations).includes(value))
+      this.#warn(
+        `The dataStoreName should not be one of the reserved storage locations: ${Object.values(
+          StorageLocations
+        ).join(", ")}.`
+      );
+    this.#dataStoreName = value;
+  }
+
+  get storageLocation() {
+    return this.#storageLocation;
+  }
+
+  set storageLocation(value) {
+    if (typeof value !== "string")
+      this.#error(`Expected a string, but got ${typeof value}`, true, [
+        { data: value },
+      ]);
+    if (Object.values(StorageLocations).includes(value)) {
+      this.#storageLocation = value;
+    } else {
+      this.#error(
+        `The storageLocation must be one of the following: ${Object.values(
+          StorageLocations
+        ).join(", ")}. Found ${value}.`,
+        true,
+        [{ data: value }]
+      );
+    }
+  }
+
+  /****************************************************************
+   * Sets the name of the data store.
+   * @deprecated This method will be removed in future versions. Use the dataStoreName property instead.
+   * @param {string} dataStoreName - The name of the data store. Default is "Items".
+   * @returns {DataContext} - The current DataContext instance.
+   ***************************************************************
+   */
   DataStoreName = function (dataStoreName = "Items") {
     if (typeof dataStoreName !== "string")
       this.#error(`Expected a string, but got ${typeof dataStoreName}`, true, [
@@ -173,6 +282,13 @@ export class DataContext {
     return this;
   };
 
+  /****************************************************************
+   * Sets the storage location for the data store.
+   * @deprecated This method will be removed in future versions. Use the storageLocation property instead.
+   * @param {StorageLocation} storageLocation - The location for browser storage. Default is StorageLocations.LocalStorage.
+   * @returns {DataContext} - The current DataContext instance.
+   ***************************************************************
+   */
   StorageLocation = function (storageLocation = StorageLocations.LocalStorage) {
     if (typeof storageLocation !== "string")
       this.#error(
