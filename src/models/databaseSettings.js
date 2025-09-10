@@ -1,5 +1,4 @@
 import { StorageLocations } from "./storageLocations.js";
-import { PersistenceTypes } from "./persistenceTypes.js";
 
 /**
  * @class DatabaseSettings
@@ -44,14 +43,12 @@ export class DatabaseSettings {
     databaseVersion,
     tableName,
     primaryKeyField,
-    persistenceType,
     storageLocation
   ) {
     this.databaseName = databaseName || "ItemStore";
     this.databaseVersion = databaseVersion || 1;
     this.tableName = tableName || "Items";
     this.primaryKeyField = primaryKeyField || "id";
-    this.persistenceType = persistenceType || PersistenceTypes.LocalStorage;
     this.storageLocation = storageLocation || StorageLocations.LocalStorage;
   }
 }

@@ -35,22 +35,23 @@ export { SampleData, StorageLocations, iLogger, iLoggerValidator, Logger };
 
 /**
  * @class DataContext
- * @property {string} dataStoreName - The name of the database.
+ * @property {string} storageKey - The key used to store data. Defaults to "Items". Replaces the deprecated dataStoreName property.
  * @property {string} storageLocation - The type of persistence used to store data. (cookie, localStorage, sessionStorage)
  *
  * @constructor
- * @param {string} dataStoreName - The settings to be used for the database.
+ * @param {string} storageKey - The settings to be used for the database.
  * @param {StorageLocation} storageLocation - The location for browser storage. Local storage or session storage.
  *
  * @example
  * let context = new DataContext();
  * let currentSettings = context.getCurrentSettings();
- * console.log(currentSettings.dataStoreName); // "Items"
+ * console.log(currentSettings.storageKey); // "Items"
  * console.log(currentSettings.storageLocation); // "localStorage"
  */
 export class DataContext {
   // private fields
   #dataStoreName;
+  #storageKey;
   #storageLocation;
   #dataStores;
 
@@ -67,10 +68,10 @@ export class DataContext {
   #loggingEnabled = false;
 
   constructor(
-    dataStoreName = "Items",
+    storageKey = "Items",
     storageLocation = StorageLocations.LocalStorage
   ) {
-    this.#dataStoreName = dataStoreName;
+    this.#storageKey = storageKey;
     this.#storageLocation = storageLocation;
     this.#dataStores = [];
 
@@ -97,7 +98,7 @@ export class DataContext {
 
   getCurrentSettings() {
     var settings = {
-      dataStoreName: this.#dataStoreName,
+      storageKey: this.#storageKey,
       storageLocation: this.#storageLocation,
     };
 
@@ -170,7 +171,7 @@ export class DataContext {
       this.#loggerService = myLogger;
 
       var currentLoggingSetting = this.#loggingEnabled;
-      this.enableLogging(true);
+      this.#loggingEnabled = true;
       this.#info("New logger registered successfully.");
       this.#loggingEnabled = currentLoggingSetting;
     } else {
@@ -218,11 +219,11 @@ export class DataContext {
   }
 
   // public properties
-  get dataStoreName() {
-    return this.#dataStoreName;
+  get storageKey() {
+    return this.#storageKey;
   }
 
-  set dataStoreName(value) {
+  set storageKey(value) {
     if (typeof value !== "string")
       this.#error(`Expected a string, but got ${typeof value}`, true, [
         { data: value },
@@ -230,11 +231,11 @@ export class DataContext {
 
     if (Object.values(StorageLocations).includes(value))
       this.#warn(
-        `The dataStoreName should not be one of the reserved storage locations: ${Object.values(
+        `The storageKey should not be one of the reserved storage locations: ${Object.values(
           StorageLocations
         ).join(", ")}.`
       );
-    this.#dataStoreName = value;
+    this.#storageKey = value;
   }
 
   get storageLocation() {
@@ -261,7 +262,7 @@ export class DataContext {
 
   /****************************************************************
    * Sets the name of the data store.
-   * @deprecated This method will be removed in future versions. Use the dataStoreName property instead.
+   * @deprecated This method will be removed in future versions. Use the setStorageKey method instead.
    * @param {string} dataStoreName - The name of the data store. Default is "Items".
    * @returns {DataContext} - The current DataContext instance.
    ***************************************************************
@@ -283,8 +284,30 @@ export class DataContext {
   };
 
   /****************************************************************
+   * Sets the name of the data store.
+   * @param {string} storageKey - The key used to store items. Default is "Items".
+   * @returns {DataContext} - The current DataContext instance.
+   ***************************************************************
+   */
+  setStorageKey = function (storageKey = "Items") {
+    if (typeof storageKey !== "string")
+      this.#error(`Expected a string, but got ${typeof storageKey}`, true, [
+        { data: storageKey },
+      ]);
+
+    if (Object.values(StorageLocations).includes(storageKey))
+      this.#warn(
+        `The storageKey should not be one of the reserved storage locations: ${Object.values(
+          StorageLocations
+        ).join(", ")}.`
+      );
+    this.#storageKey = storageKey;
+    return this;
+  };
+
+  /****************************************************************
    * Sets the storage location for the data store.
-   * @deprecated This method will be removed in future versions. Use the storageLocation property instead.
+   * @deprecated This method will be removed in future versions. Use the setStorageLocation method instead.
    * @param {StorageLocation} storageLocation - The location for browser storage. Default is StorageLocations.LocalStorage.
    * @returns {DataContext} - The current DataContext instance.
    ***************************************************************
@@ -310,8 +333,37 @@ export class DataContext {
     return this;
   };
 
+  /****************************************************************
+   * Sets the storage location for the data store.
+   * @param {StorageLocation} storageLocation - The location for browser storage. Default is StorageLocations.LocalStorage.
+   * @returns {DataContext} - The current DataContext instance.
+   ***************************************************************
+   */
+  setStorageLocation = function (
+    storageLocation = StorageLocations.LocalStorage
+  ) {
+    if (typeof storageLocation !== "string")
+      this.#error(
+        `Expected a string, but got ${typeof storageLocation}`,
+        true,
+        [{ data: storageLocation }]
+      );
+    if (Object.values(StorageLocations).includes(storageLocation)) {
+      this.#storageLocation = storageLocation;
+    } else {
+      this.#error(
+        `The storageLocation must be one of the following: ${Object.values(
+          StorageLocations
+        ).join(", ")}. Found ${storageLocation}.`,
+        true,
+        [{ data: storageLocation }]
+      );
+    }
+    return this;
+  };
+
   async store(
-    dataStoreName = this.#dataStoreName,
+    storageKey = this.#storageKey,
     storageLocation = this.#storageLocation,
     items = []
   ) {
@@ -332,15 +384,15 @@ export class DataContext {
           typeof arguments[0] === "string" &&
           !Object.values(StorageLocations).includes(arguments[0])
         ) {
-          this.#storeItemsByDataStoreName(dataStoreName, items);
+          this.#storeItemsByStorageKey(storageKey, items);
         } else {
           this.#error(
             "Invalid Arguments Error",
-            `The dataStoreName must be a string and cannot be one of the reserved storage locations: ${Object.values(
+            `The storageKey must be a string and cannot be one of the reserved storage locations: ${Object.values(
               StorageLocations
             ).join(", ")}. Items must be an array of objects or values.`,
             false,
-            [{ dataStoreName: arguments[0], items: arguments[1] }]
+            [{ storageKey: arguments[0], items: arguments[1] }]
           );
         }
         break;
@@ -351,21 +403,17 @@ export class DataContext {
           typeof arguments[0] === "string" &&
           Object.values(StorageLocations).includes(arguments[1])
         ) {
-          this.#storeItemsByStorageLocation(
-            dataStoreName,
-            storageLocation,
-            items
-          );
+          this.#storeItemsByStorageLocation(storageKey, storageLocation, items);
         } else {
           this.#error(
             "Invalid Arguments Error",
-            `DataStoreName must be a string. StorageLocation must be one of the following: ${Object.values(
+            `StorageKey must be a string. StorageLocation must be one of the following: ${Object.values(
               StorageLocations
             ).join(", ")}. Items must be an array of objects or values.`,
             false,
             [
               {
-                dataStoreName: arguments[0],
+                storageKey: arguments[0],
                 storageLocation: arguments[1],
                 items: arguments[2],
               },
@@ -380,18 +428,13 @@ export class DataContext {
   }
 
   async #storeItems(items) {
-    var dataEvent = {};
-
     switch (this.#storageLocation) {
       //persist to LocalStorage service
       case StorageLocations.LocalStorage:
-        this.#localStorageService.save(
-          this.#dataStoreName,
-          JSON.stringify(items)
-        );
+        this.#localStorageService.save(this.#storageKey, JSON.stringify(items));
         this.#logDataEntry(
           this.#logActions.Store,
-          this.#dataStoreName,
+          this.#storageKey,
           StorageLocations.LocalStorage,
           items
         );
@@ -400,12 +443,12 @@ export class DataContext {
       //persist to sessionStorage service
       case StorageLocations.SessionStorage:
         this.#sessionStorageService.save(
-          this.#dataStoreName,
+          this.#storageKey,
           JSON.stringify(items)
         );
         this.#logDataEntry(
           this.#logActions.Store,
-          this.#dataStoreName,
+          this.#storageKey,
           StorageLocations.SessionStorage,
           items
         );
@@ -416,6 +459,13 @@ export class DataContext {
     }
   }
 
+  /*****************************************************************************
+   * Stores items using a specific data store name.
+   * @deprecated This method will be removed in future versions. Use storeItemsByStorageKey instead.
+   * @param {string} dataStoreName - The name of the data store.
+   * @param {Array} items - The items to be stored.
+   ****************************************************************************
+   */
   async #storeItemsByDataStoreName(dataStoreName, items) {
     switch (this.#storageLocation) {
       //persist to LocalStorage service
@@ -445,14 +495,20 @@ export class DataContext {
     }
   }
 
-  async #storeItemsByStorageLocation(dataStoreName, storageLocation, items) {
-    switch (storageLocation) {
+  /*****************************************************************************
+   * Stores items using a specific storage key.
+   * @param {string} storageKey - The storage key.
+   * @param {Array} items - The items to be stored.
+   ****************************************************************************
+   */
+  async #storeItemsByStorageKey(storageKey, items) {
+    switch (this.#storageLocation) {
       //persist to LocalStorage service
       case StorageLocations.LocalStorage:
-        this.#localStorageService.save(dataStoreName, JSON.stringify(items));
+        this.#localStorageService.save(storageKey, JSON.stringify(items));
         this.#logDataEntry(
           this.#logActions.Store,
-          dataStoreName,
+          storageKey,
           StorageLocations.LocalStorage,
           items
         );
@@ -460,10 +516,46 @@ export class DataContext {
 
       //persist to sessionStorage service
       case StorageLocations.SessionStorage:
-        this.#sessionStorageService.save(dataStoreName, JSON.stringify(items));
+        this.#sessionStorageService.save(storageKey, JSON.stringify(items));
         this.#logDataEntry(
           this.#logActions.Store,
-          dataStoreName,
+          storageKey,
+          StorageLocations.SessionStorage,
+          items
+        );
+        break;
+
+      default:
+        break;
+    }
+  }
+
+  /*****************************************************************************
+   * Stores items using a specific storage location.
+   * @param {string} storageKey - The key used to store the data.
+   * @param {StorageLocation} storageLocation - The storage location.
+   * @param {Array} items - The items to be stored.
+   ****************************************************************************
+   */
+  async #storeItemsByStorageLocation(storageKey, storageLocation, items) {
+    switch (storageLocation) {
+      //persist to LocalStorage service
+      case StorageLocations.LocalStorage:
+        this.#localStorageService.save(storageKey, JSON.stringify(items));
+        this.#logDataEntry(
+          this.#logActions.Store,
+          storageKey,
+          StorageLocations.LocalStorage,
+          items
+        );
+        break;
+
+      //persist to sessionStorage service
+      case StorageLocations.SessionStorage:
+        this.#sessionStorageService.save(storageKey, JSON.stringify(items));
+        this.#logDataEntry(
+          this.#logActions.Store,
+          storageKey,
           StorageLocations.SessionStorage,
           items
         );
@@ -475,7 +567,7 @@ export class DataContext {
   }
 
   async retrieve(
-    dataStoreName = this.#dataStoreName,
+    storageKey = this.#storageKey,
     storageLocation = this.#storageLocation
   ) {
     let data = [];
@@ -486,7 +578,7 @@ export class DataContext {
         break;
       case 1:
         if (typeof arguments[0] === "string") {
-          data = await this.#retrieveItemsByDataStoreName(dataStoreName);
+          data = await this.#retrieveItemsByStorageKey(storageKey);
         } else {
           this.#error(
             `Invalid Arguments Error. Expected a string but found type ${typeof arguments[0]}.`,
@@ -501,12 +593,12 @@ export class DataContext {
           Object.values(StorageLocations).includes(storageLocation)
         ) {
           data = await this.#retrieveItemsByStorageLocation(
-            dataStoreName,
+            storageKey,
             storageLocation
           );
         } else {
           this.#error(
-            `Invalid Arguments Error. DataStoreName must be a string and cannot be one of the reserved storage locations: ${Object.values(
+            `Invalid Arguments Error. StorageKey must be a string and cannot be one of the reserved storage locations: ${Object.values(
               StorageLocations
             ).join(
               ", "
@@ -516,7 +608,7 @@ export class DataContext {
               ", "
             )}. Found types ${typeof arguments[0]} and ${typeof arguments[1]}.`,
             false,
-            [{ dataStoreName: arguments[0], storageLocation: arguments[1] }]
+            [{ storageKey: arguments[0], storageLocation: arguments[1] }]
           );
         }
         break;
@@ -531,7 +623,7 @@ export class DataContext {
     switch (this.#storageLocation) {
       //retrieve from localStorage service
       case StorageLocations.LocalStorage:
-        var result = this.#localStorageService.retrieve(this.#dataStoreName);
+        var result = this.#localStorageService.retrieve(this.#storageKey);
         try {
           data = result ? JSON.parse(result.Value) : [];
         } catch (e) {
@@ -546,7 +638,7 @@ export class DataContext {
 
       //retrieve from sessionStorage service
       case StorageLocations.SessionStorage:
-        var result = this.#sessionStorageService.retrieve(this.#dataStoreName);
+        var result = this.#sessionStorageService.retrieve(this.#storageKey);
         try {
           data = result ? JSON.parse(result.Value) : [];
         } catch (e) {
@@ -565,6 +657,13 @@ export class DataContext {
     return data;
   }
 
+  /*****************************************************************************
+   * Retrieves items using a specific data store name.
+   * @deprecated This method will be removed in future versions. Use retrieveItemsByStorageKey instead.
+   * @param {string} dataStoreName - The name of the data store.
+   * @returns {Array} - The retrieved items.
+   ****************************************************************************
+   */
   async #retrieveItemsByDataStoreName(dataStoreName) {
     let data = [];
     switch (this.#storageLocation) {
@@ -604,12 +703,18 @@ export class DataContext {
     return data;
   }
 
-  async #retrieveItemsByStorageLocation(dataStoreName, storageLocation) {
+  /*****************************************************************************
+   * Retrieves items using a specific storage key.
+   * @param {string} storageKey - The storage key.
+   * @returns {Array} - The retrieved items.
+   ****************************************************************************
+   */
+  async #retrieveItemsByStorageKey(storageKey) {
     let data = [];
-    switch (storageLocation) {
+    switch (this.#storageLocation) {
       //retrieve from localStorage service
       case StorageLocations.LocalStorage:
-        var result = this.#localStorageService.retrieve(dataStoreName);
+        var result = this.#localStorageService.retrieve(storageKey);
         try {
           data = result ? JSON.parse(result.Value) : [];
         } catch (e) {
@@ -624,7 +729,46 @@ export class DataContext {
 
       //retrieve from sessionStorage service
       case StorageLocations.SessionStorage:
-        var result = this.#sessionStorageService.retrieve(dataStoreName);
+        var result = this.#sessionStorageService.retrieve(storageKey);
+        try {
+          data = result ? JSON.parse(result.Value) : [];
+        } catch (e) {
+          this.#error(
+            "Session Storage Error",
+            "Unable to retrieve data from session storage service.",
+            false,
+            [{ "Details:": e, "Result:": result }]
+          );
+        }
+        break;
+
+      default:
+        break;
+    }
+    return data;
+  }
+
+  async #retrieveItemsByStorageLocation(storageKey, storageLocation) {
+    let data = [];
+    switch (storageLocation) {
+      //retrieve from localStorage service
+      case StorageLocations.LocalStorage:
+        var result = this.#localStorageService.retrieve(storageKey);
+        try {
+          data = result ? JSON.parse(result.Value) : [];
+        } catch (e) {
+          this.#error(
+            "Local Storage Error",
+            "Unable to retrieve data from local storage service.",
+            false,
+            [{ "Details:": e, "Result:": result }]
+          );
+        }
+        break;
+
+      //retrieve from sessionStorage service
+      case StorageLocations.SessionStorage:
+        var result = this.#sessionStorageService.retrieve(storageKey);
         try {
           data = result ? JSON.parse(result.Value) : [];
         } catch (e) {
@@ -644,7 +788,7 @@ export class DataContext {
   }
 
   async remove(
-    dataStoreName = this.#dataStoreName,
+    storageKey = this.#storageKey,
     storageLocation = this.#storageLocation
   ) {
     switch (arguments.length) {
@@ -653,10 +797,10 @@ export class DataContext {
         break;
       case 1:
         if (typeof arguments[0] === "string") {
-          this.#removeItemsByDataStoreName(dataStoreName);
+          this.#removeItemsByStorageKey(storageKey);
         } else {
           this.#error(
-            `Invalid Arguments Error. DataStoreName must be a string. Found ${typeof arguments[0]}.`
+            `Invalid Arguments Error. StorageKey must be a string. Found ${typeof arguments[0]}.`
           );
         }
         break;
@@ -665,10 +809,10 @@ export class DataContext {
           typeof arguments[0] === "string" &&
           Object.values(StorageLocations).includes(arguments[1])
         ) {
-          this.#removeItemsByStorageLocation(dataStoreName, storageLocation);
+          this.#removeItemsByStorageLocation(storageKey, storageLocation);
         } else {
           this.#error(
-            `Invalid Arguments Error. DataStoreName must be a string and cannot be one of the reserved storage locations: ${Object.values(
+            `Invalid Arguments Error. StorageKey must be a string and cannot be one of the reserved storage locations: ${Object.values(
               StorageLocations
             ).join(
               ", "
@@ -691,36 +835,34 @@ export class DataContext {
     switch (this.#storageLocation) {
       //remove from LocalStorage service
       case StorageLocations.LocalStorage:
-        var items = this.#localStorageService.retrieve(this.#dataStoreName);
+        var items = this.#localStorageService.retrieve(this.#storageKey);
         if (items && items.length > 0) {
-          this.#localStorageService.remove(this.#dataStoreName);
+          this.#localStorageService.remove(this.#storageKey);
         } else {
-          this.#warn(
-            `No items found in LocalStorage for ${this.#dataStoreName}`
-          );
+          this.#warn(`No items found in LocalStorage for ${this.#storageKey}`);
           return;
         }
         this.#logDataEntry(
           this.#logActions.Remove,
-          this.#dataStoreName,
+          this.#storageKey,
           this.#storageLocation
         );
         break;
 
       //remove from sessionStorage service
       case StorageLocations.SessionStorage:
-        var items = this.#sessionStorageService.retrieve(this.#dataStoreName);
+        var items = this.#sessionStorageService.retrieve(this.#storageKey);
         if (items && items.length > 0) {
-          this.#sessionStorageService.remove(this.#dataStoreName);
+          this.#sessionStorageService.remove(this.#storageKey);
         } else {
           this.#warn(
-            `No items found in SessionStorage for ${this.#dataStoreName}`
+            `No items found in SessionStorage for ${this.#storageKey}`
           );
           return;
         }
         this.#logDataEntry(
           this.#logActions.Remove,
-          this.#dataStoreName,
+          this.#storageKey,
           this.#storageLocation
         );
 
@@ -731,6 +873,12 @@ export class DataContext {
     }
   }
 
+  /*****************************************************************************
+   * Removes items using a specific data store name.
+   * @deprecated This method will be removed in future versions. Use removeItemsByStorageKey instead.
+   * @param {string} dataStoreName - The name of the data store.
+   ****************************************************************************
+   */
   async #removeItemsByDataStoreName(dataStoreName) {
     switch (this.#storageLocation) {
       //remove from LocalStorage service
@@ -771,20 +919,65 @@ export class DataContext {
     }
   }
 
-  async #removeItemsByStorageLocation(dataStoreName, storageLocation) {
-    switch (storageLocation) {
+  /*****************************************************************************
+   * Removes items using a specific data store name.
+   * @param {string} storageKey - The key of the storage item.
+   ****************************************************************************
+   */
+  async #removeItemsByStorageKey(storageKey) {
+    switch (this.#storageLocation) {
       //remove from LocalStorage service
       case StorageLocations.LocalStorage:
-        var items = this.#localStorageService.retrieve(dataStoreName);
+        var items = this.#localStorageService.retrieve(storageKey);
         if (items && items.length > 0) {
-          this.#localStorageService.remove(dataStoreName);
+          this.#localStorageService.remove(storageKey);
         } else {
-          this.#warn(`No items found in LocalStorage for ${dataStoreName}`);
+          this.#warn(`No items found in LocalStorage for ${storageKey}`);
           return;
         }
         this.#logDataEntry(
           this.#logActions.Remove,
-          dataStoreName,
+          storageKey,
+          this.#storageLocation
+        );
+
+        break;
+
+      //remove from sessionStorage service
+      case StorageLocations.SessionStorage:
+        var items = this.#sessionStorageService.retrieve(storageKey);
+        if (items && items.length > 0) {
+          this.#sessionStorageService.remove(storageKey);
+        } else {
+          this.#warn(`No items found in SessionStorage for ${storageKey}`);
+          return;
+        }
+        this.#logDataEntry(
+          this.#logActions.Remove,
+          storageKey,
+          this.#storageLocation
+        );
+        break;
+
+      default:
+        break;
+    }
+  }
+
+  async #removeItemsByStorageLocation(storageKey, storageLocation) {
+    switch (storageLocation) {
+      //remove from LocalStorage service
+      case StorageLocations.LocalStorage:
+        var items = this.#localStorageService.retrieve(storageKey);
+        if (items && items.length > 0) {
+          this.#localStorageService.remove(storageKey);
+        } else {
+          this.#warn(`No items found in LocalStorage for ${storageKey}`);
+          return;
+        }
+        this.#logDataEntry(
+          this.#logActions.Remove,
+          storageKey,
           storageLocation
         );
 
@@ -792,16 +985,16 @@ export class DataContext {
 
       //remove from sessionStorage service
       case StorageLocations.SessionStorage:
-        var items = this.#sessionStorageService.retrieve(dataStoreName);
+        var items = this.#sessionStorageService.retrieve(storageKey);
         if (items && items.length > 0) {
-          this.#sessionStorageService.remove(dataStoreName);
+          this.#sessionStorageService.remove(storageKey);
         } else {
-          this.#warn(`No items found in SessionStorage for ${dataStoreName}`);
+          this.#warn(`No items found in SessionStorage for ${storageKey}`);
           return;
         }
         this.#logDataEntry(
           this.#logActions.Remove,
-          dataStoreName,
+          storageKey,
           storageLocation
         );
 
@@ -812,14 +1005,14 @@ export class DataContext {
     }
   }
 
-  async #logDataEntry(action, dataStoreName, storageLocation, items) {
+  async #logDataEntry(action, storageKey, storageLocation, items) {
     //TODO: Implement logging functionality as a separate logging service using a ServiceWorker and Singleton pattern.
     const timestamp = new Date().toISOString();
     var logEntry = {};
     switch (action) {
       case "STORE":
         logEntry = {
-          dataStoreName: dataStoreName,
+          storageKey: storageKey,
           storageLocation: storageLocation,
           action: action,
           modifiedOn: timestamp,
@@ -827,23 +1020,21 @@ export class DataContext {
         };
         this.#dataStores.push(logEntry);
         if (this.#loggingEnabled) {
-          this.#info(`Data stored as ${dataStoreName} in ${storageLocation}`);
+          this.#info(`Data stored as ${storageKey} in ${storageLocation}`);
         }
         break;
       case "RETRIEVE":
         // Implement retrieve action logging
         if (this.#loggingEnabled) {
-          this.#info(
-            `Retrieved data as ${dataStoreName} from ${storageLocation}`
-          );
+          this.#info(`Retrieved data as ${storageKey} from ${storageLocation}`);
         }
         break;
       case "REMOVE":
         this.#dataStores = this.#dataStores.filter(
-          (entry) => entry.dataStoreName !== dataStoreName
+          (entry) => entry.storageKey !== storageKey
         );
         if (this.#loggingEnabled) {
-          this.#info(`Removed data ${dataStoreName} from ${storageLocation}`);
+          this.#info(`Removed data ${storageKey} from ${storageLocation}`);
         }
         break;
       default:
