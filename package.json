@@ -5,22 +5,45 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./services": {
+      "import": "./dist/services/index.mjs",
+      "types": "./dist/services/index.d.ts"
+    },
+    "./errors": {
+      "import": "./dist/errors/index.mjs",
+      "types": "./dist/errors/index.d.ts"
+    },
+    "./utils": {
+      "import": "./dist/utils/index.mjs",
+      "types": "./dist/utils/index.d.ts"
+    }
+  },
   "scripts": {
     "alpha-patch": "npm version prerelease --preid=alpha",
     "patch": "npm version patch",
     "minor": "npm version minor",
     "major": "npm version major",
-    "build": "npm run clean && rollup -c",
-    "clean": "rm -rf dist",
-    "typecheck": "tsc --noEmit",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
     "test:verbose": "jest --verbose",
     "test:ci": "jest --ci --coverage --maxWorkers=2",
     "checkin": "git add . && git commit -a -m \"See CHANGES.md for a list of Revisions.\" ",
     "link": "npm run build && npm link",
-    "lint": "eslint ."
+    "build": "npm run clean && npm run build:types && npm run build:bundle",
+    "build:types": "tsc --emitDeclarationOnly",
+    "build:bundle": "rollup -c",
+    "clean": "rm -rf dist",
+    "dev": "rollup -c -w",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src/**/*.ts",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run typecheck && npm run test && npm run build"
   },
   "keywords": [
     "localStorage",
@@ -53,6 +76,10 @@
     "CHANGES.md",
     "package.json"
   ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=14.0.0"
+  },
   "homepage": "https://github.com/xnodeoncode/i45",
   "repository": {
     "type": "git",
