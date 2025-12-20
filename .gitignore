@@ -9,21 +9,9 @@ dist/services/
 dist/dataService.js
 
 node_modules/
-public/
-src/assets/
-src/components/
-src/servicehooks/
-src/ui/
-src/*.css
-src/*.jsx
 
-
-*.config.js
 *.ico
 *.bak
-
-
-index.html
 
 # Logs
 logs

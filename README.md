@@ -1,18 +1,143 @@
 # i45
 
-[NodeJS package](https://www.npmjs.com/package/i45)
+**Type-safe browser storage wrapper for localStorage and sessionStorage**
 
-As a wrapper for browser storage (localStorage and sessionStorage), i45 allows you to store any collection of data in the form of an array.
+[![npm version](https://img.shields.io/npm/v/i45)](https://www.npmjs.com/package/i45)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue)](https://www.typescriptlang.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+[NodeJS package](https://www.npmjs.com/package/i45) | [GitHub Repository](https://github.com/xnodeoncode/i45)
+
+A powerful, type-safe wrapper for browser storage (localStorage and sessionStorage) with built-in logging, validation, and error handling. Built with TypeScript for maximum type safety and developer experience.
+
+**Version 3.0.0-alpha.1** - Complete TypeScript rewrite with architectural refactoring (December 2025)
+
+## Features
+
+- ✨ **Full TypeScript support** with generic types: `DataContext<T>`
+- 🔒 **Type-safe operations** - catch errors at compile time
+- 🏗️ **Modern architecture** - modular design with service orchestration
+- 📦 **Simple API** - config object pattern or legacy constructor
+- 🎯 **Zero code duplication** - 300+ lines eliminated through refactoring
+- ✅ **Comprehensive validation** - centralized with `ValidationUtils`
+- 🚨 **6 custom error classes** - specific, actionable error handling
+- 🪵 **Built-in logging** via [i45-jslogger](https://www.npmjs.com/package/i45-jslogger)
+- 🧪 **Well tested** - 172 tests with 92% coverage
+- 🎯 **Zero dependencies** (except i45-jslogger and i45-sample-data)
+- 📝 **Sample data included** via [i45-sample-data](https://www.npmjs.com/package/i45-sample-data)
+- 🌳 **Tree-shakeable** ESM build
+- 📖 **Comprehensive type definitions** (.d.ts)
+
+**📚 Documentation:** [Migration Guide](./docs/MIGRATION.md) | [API Reference](./docs/API.md) | [TypeScript Guide](./docs/TYPESCRIPT.md) | [Examples](./docs/EXAMPLES.md)
 
 ## Installation
 
+```bash
+npm install i45
+```
+
+## Quick Start
+
+### TypeScript (Recommended)
+
+```typescript
+import { DataContext, StorageLocations, Logger } from "i45";
+
+// Define your data type
+interface User {
+  id: number;
+  name: string;
+  email: string;
+}
+
+// Create a type-safe context with config object (modern approach)
+const context = new DataContext<User>({
+  storageKey: "Users",
+  storageLocation: StorageLocations.LocalStorage,
+  loggingEnabled: true,
+  logger: new Logger(),
+});
+
+// Or use legacy constructor (still supported)
+const legacyContext = new DataContext<User>(
+  "Users",
+  StorageLocations.LocalStorage
+);
+
+// Store data (fully typed!)
+await context.store([
+  { id: 1, name: "Alice", email: "alice@example.com" },
+  { id: 2, name: "Bob", email: "bob@example.com" },
+]);
+
+// Retrieve data (returns User[])
+const users = await context.retrieve();
+console.log(users);
+```
+
+📖 **More examples:** [EXAMPLES.md](./docs/EXAMPLES.md) | [TypeScript Guide](./docs/TYPESCRIPT.md)
+
+### JavaScript
+
 ```javascript
-npm i i45
+import { DataContext, SampleData } from "i45";
+
+// Create an instance of the datacontext
+// The default storage location is localStorage
+const context = new DataContext();
+
+// Store data using sample data
+await context.store(SampleData.Lists.Astronomy);
+
+// Retrieve data
+const data = await context.retrieve();
+console.log("Astronomy terms:", data);
+```
+
+## Architecture
+
+i45 v3.0.0 features a completely refactored, modular architecture (December 2025).
+
+📖 **See also:** [Migration Guide - Architecture](./docs/MIGRATION.md#new-architecture) | [API Reference](./docs/API.md)
 
 ```
+/src
+  /core                      # Core application logic
+    DataContext.ts           # Main storage context
+    StorageManager.ts        # Service orchestration
+  /services
+    /base                    # Abstract base classes
+      IStorageService.ts     # Service interface
+      BaseStorageService.ts  # Shared service logic
+    LocalStorageService.ts
+    SessionStorageService.ts
+  /errors                    # Custom error classes
+    StorageKeyError.ts
+    StorageLocationError.ts
+    DataRetrievalError.ts
+    StorageQuotaError.ts
+    PersistenceServiceNotEnabled.ts
+    DataServiceUnavailable.ts
+  /models                    # Data models
+    DataContextConfig.ts
+    storageItem.ts
+    storageLocations.ts
+  /utils                     # Shared utilities
+    ValidationUtils.ts       # Centralized validation
+    ErrorHandler.ts          # Error management
+```
+
+### Architecture Benefits
+
+- **Single Responsibility**: Each module has one clear purpose
+- **Zero Duplication**: 300+ lines of duplicate code eliminated
+- **Easy Testing**: Isolated modules with 92% test coverage
+- **Type Safe**: Strong typing throughout
+- **Extensible**: Add new storage services by implementing interface
 
 ## Usage
 
+- [TypeScript Usage](#typescript-usage)
 - [Default Storage Settings](#default-storage-settings)
 - [Custom Storage Settings](#custom-storage-settings)
 - [Retrieving Data](#retrieving-data)
@@ -22,82 +147,163 @@ npm i i45
 - [Using Sample Data](#using-sample-data)
 - [Logging](#logging)
 
+### TypeScript Usage
+
+i45 v3.0 is built with TypeScript and provides full type safety.
+
+📖 **See [TYPESCRIPT.md](./docs/TYPESCRIPT.md) for comprehensive TypeScript usage guide**
+
+```typescript
+import { DataContext, StorageLocations, type StorageItem } from "i45";
+
+// Generic type for your data
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+}
+
+// Type-safe context
+const context = new DataContext<Product>(
+  "products",
+  StorageLocations.SessionStorage
+);
+
+// Store - TypeScript ensures correct types
+await context.store([
+  { id: "1", name: "Widget", price: 9.99 },
+  { id: "2", name: "Gadget", price: 19.99 },
+]);
+
+// Retrieve - returns Product[]
+const products = await context.retrieve();
+products.forEach((p) => console.log(`${p.name}: $${p.price}`));
+```
+
 ### Default Storage Settings
 
 ```javascript
 import { DataContext, SampleData } from "i45";
 
-// Create an instance of the datacontext.
-// The default storage location is local storage using a default key.
-var dataContext = new DataContext();
+// Create an instance - uses localStorage by default with key "i45"
+const context = new DataContext();
 
-// Create an array of objects or values. This is a sample collection of astronomical terms.
-var terms = SampleData.Lists.Astronomy;
+// Store data
+await context.store(SampleData.Lists.Astronomy);
 
-// Save the collection to localStorage, passing in an array of objects/values.
-dataContext.store(terms);
+// Retrieve data
+const data = await context.retrieve();
+console.log(data);
 ```
 
 ### Custom Storage Settings
 
+#### Modern Config Object (Recommended)
+
+```typescript
+import { DataContext, StorageLocations, Logger } from "i45";
+
+// Create context with configuration object
+const context = new DataContext<BookType>({
+  storageKey: "Books",
+  storageLocation: StorageLocations.SessionStorage,
+  loggingEnabled: true,
+  logger: new Logger(),
+});
+
+// Store books collection
+await context.store(SampleData.JsonData.Books);
+
+// Retrieve data
+const books = await context.retrieve();
+console.log(books);
+```
+
+#### Legacy Constructor (Still Supported)
+
 ```javascript
 import { DataContext, StorageLocations, SampleData } from "i45";
 
-// This creates a dataset with the name Books to be stored in sessionStorage.
-var context = new DataContext("Books", StorageLocations.SessionStorage);
+// Create context with positional parameters
+const context = new DataContext("Books", StorageLocations.SessionStorage);
 
-// create an array of objects/values. This is a sample collection of books using the SampleData module.
-var books = SampleData.JsonData.Books;
+// Store books collection
+await context.store(SampleData.JsonData.Books);
 
-// save the collection to session storage.
-dataContext.store(books);
+// Retrieve data
+const books = await context.retrieve();
+console.log(books);
 ```
 
 ### Retrieving Data
 
-The example below demonstrates how to retrieve data using default database settings.
-
 ```javascript
 import { DataContext, SampleData } from "i45";
 
-// create an instance of data context.
-var context = new DataContext();
+// Create context
+const context = new DataContext();
 
-// store the data, in this case, the default local storage is used.
-context.store(SampleData.JsonData.States);
+// Store data
+await context.store(SampleData.JsonData.States);
 
-// retrieve the data and log it to the console.
-context.retrieve().then((data) => console.log("State data:", data));
+// Retrieve and use
+const states = await context.retrieve();
+console.log("State data:", states);
+```
+
+### Explicit Method Signatures
+
+v3.0.0 provides clear, explicit methods (no confusing overloads):
+
+```typescript
+import { DataContext, StorageLocations } from "i45";
+
+const context = new DataContext<MyType>();
+
+// Store with different scopes
+await context.store(items); // Default key/location
+await context.storeAs("customKey", items); // Custom key
+await context.storeAt("key", StorageLocations.SessionStorage, items); // Full control
+
+// Retrieve with different scopes
+const data1 = await context.retrieve(); // Default
+const data2 = await context.retrieveFrom("customKey"); // Custom key
+const data3 = await context.retrieveAt("key", StorageLocations.SessionStorage); // Full control
+
+// Remove with different scopes
+await context.remove(); // Default
+await context.removeFrom("customKey"); // Custom key
+await context.removeAt("key", StorageLocations.SessionStorage); // Full control
 ```
 
 ### Retrieving Data from Custom Data Stores
 
-To retrieve data using customized settings, call the retrieve() method passing in the DataStoreName or key.
-
 ```javascript
 import { DataContext, StorageLocations, SampleData } from "i45";
 
-// This creates a dataset with the name Quiz to be stored in sessionStorage.
-var context = new DataContext("Questions", StorageLocations.SessionStorage);
+// Create context with custom settings
+const context = new DataContext("Questions", StorageLocations.SessionStorage);
 
-// Store an array of objects/values. This is a sample collection of trivia questions.
-dataContext.store(SampleData.JsonData.TriviaQuestions);
+// Store questions
+await context.store(SampleData.JsonData.TriviaQuestions);
 
-// retrieve the data.
-datacontext.retrieve("Questions").then((data) => {
-  console.log(data);
-});
-```
+// Retrieve by key
+const questions = await context.retrieve("Questions");
+console.log(questions);
 
-In the case of multiple datasets in multiple locations, pass in both the data store name and the location, in order to retrieve the correct data.
-
-```javascript
-var data = context.retrieve("MyItems", StorageLocations.LocalStorage);
+// Retrieve with specific location
+const data = await context.retrieve("MyItems", StorageLocations.LocalStorage);
 ```
 
 ### Removing Items and Clearing the Data Store
 
-To delete an entry, call the remove() method on the data context passing in the DataStoreName(key).
+```javascript
+// Delete a specific data store by key
+await context.remove("Questions");
+
+// Clear all data from current storage location
+await context.clear();
+```
 
 To clear all entries in all storage locations, call the clear() method.
 
@@ -124,82 +330,330 @@ datacontext.clear();
 
 ### Storage Locations
 
-StorageLocations is an enum of the available storage options. Currently, those are LocalStorage and SessionStorage.
+StorageLocations is an enum of available storage options:
+
+```typescript
+import { StorageLocations } from "i45";
+
+// Available options
+StorageLocations.LocalStorage; // Uses window.localStorage (default)
+StorageLocations.SessionStorage; // Uses window.sessionStorage
+```
 
 #### Using StorageLocations
 
-LocalStorage is used by default, and can be changed by calling the StoreLocation() method.
-
 ```javascript
-StorageLocations.LocalStorage; // uses window.localStorage to persist data.
-StorageLocations.SessionStorage; // uses window.sessionStorage to persist data.
+import { DataContext, StorageLocations } from "i45";
 
-// change the storage location to session storage.
-context.StorageLocation(StorageLocations.SessionStorage);
+// Specify storage location in constructor
+const context = new DataContext("MyItems", StorageLocations.SessionStorage);
 
-// or when creating a new instance of a data context.
-var context = new DataContext("MyItems", StorageLocations.SessionStorage);
+// Or use properties
+context.storageLocation = StorageLocations.LocalStorage;
 ```
 
 ### Using Sample Data
 
-The i45-Sample-Data package is a library of sample datasets that can be used during development.
-
-The package has been merged for convenience.
-
-Full usage details can be found at [i45-Sample-Data](https://www.npmjs.com/package/i45-sample-data)
+The [i45-sample-data](https://www.npmjs.com/package/i45-sample-data) package provides sample datasets for development and testing:
 
 ```javascript
 import { SampleData } from "i45";
 
-var books = SampleData.JsonData.Books;
+// Access various sample datasets
+const books = SampleData.JsonData.Books;
+const states = SampleData.JsonData.States;
+const astronomy = SampleData.Lists.Astronomy;
+const countries = SampleData.KeyValueLists.Countries;
 
 console.log(books);
 ```
 
 ### Logging
 
-#### Built-In Logging
+i45 integrates [i45-jslogger](https://www.npmjs.com/package/i45-jslogger) for comprehensive logging support.
 
-The i45-jslogging package is integrated for data context logging. The enableLogging() method, which accepts true or false, will turn logging on or off.
+📖 **See also:** [EXAMPLES.md - Custom Logger](./docs/EXAMPLES.md#custom-logger)
+
+#### Built-In Logging
 
 ```javascript
 import { DataContext } from "i45";
 
-var context = new DataContext();
-context.enableLogging(true);
+const context = new DataContext();
+
+// Enable logging
+context.loggingEnabled = true;
+
+// Operations will now be logged
+await context.store([{ id: 1, name: "Test" }]);
 ```
 
-When enabled, messages are written both to the console as well as to localStorage as"eventLog".
-
-See [i45-jsLogger](https://www.npmjs.com/package/i45-jslogger) for full details on how the module works.
+When enabled, log messages are written to the console and stored in localStorage.
 
 #### Using a Custom Logger
 
-The DataContext can accept a custom logger, such as a file system logger, as long as the following methods are implemented:
-
-- log()
-- info(),
-- warn(),
-- error()
-
-##### Custom Logger Example
-
-Multiple clients can be added using this method., messages (info, warnings, errors) from the DataContext will be sent to each of the clients.
+Add custom logging clients to receive DataContext events:
 
 ```javascript
-import { DataContext } from "i45";
-import { CustomLogger } from "some-package"; // example import
+import { DataContext, Logger } from "i45";
 
-// get an instance of the custom logger. This example assumes the use of a class.
-var myLogger = new CustomLogger();
+// Create or use your existing logger
+const customLogger = new Logger({
+  logToConsole: true,
+  logToStorage: false,
+});
 
-// create an instance of the datacontext.
+// Add to context
 const context = new DataContext();
+context.addClient(customLogger);
 
-// Register the custom logger.
-context.addClient(myLogger);
-
-// Enable logging.
-context.enableLogging = true;
+// Multiple loggers supported
+context.addClient(fileSystemLogger);
+context.addClient(apiLogger);
 ```
+
+## API Reference
+
+📖 **Complete API documentation:** [API.md](./docs/API.md)
+
+### DataContext<T>
+
+Main class for managing browser storage operations.
+
+```typescript
+class DataContext<T = any> {
+  // Constructor - Config object (recommended)
+  constructor(config?: DataContextConfig);
+
+  // Constructor - Legacy (still supported)
+  constructor(storageKey?: string, storageLocation?: StorageLocation);
+
+  // Properties
+  storageKey: string;
+  storageLocation: StorageLocation;
+  loggingEnabled: boolean;
+  logger: Logger | null;
+
+  // Store methods
+  async store(items: T[]): Promise<DataContext<T>>;
+  async storeAs(storageKey: string, items: T[]): Promise<DataContext<T>>;
+  async storeAt(
+    storageKey: string,
+    storageLocation: StorageLocation,
+    items: T[]
+  ): Promise<DataContext<T>>;
+
+  // Retrieve methods
+  async retrieve(): Promise<T[]>;
+  async retrieveFrom(storageKey: string): Promise<T[]>;
+  async retrieveAt(
+    storageKey: string,
+    storageLocation: StorageLocation
+  ): Promise<T[]>;
+
+  // Remove methods
+  async remove(): Promise<DataContext<T>>;
+  async removeFrom(storageKey: string): Promise<DataContext<T>>;
+  async removeAt(
+    storageKey: string,
+    storageLocation: StorageLocation
+  ): Promise<DataContext<T>>;
+
+  // Other methods
+  async clear(): Promise<DataContext<T>>;
+  addClient(logger: Logger): DataContext<T>;
+  getCurrentSettings(): {
+    storageKey: string;
+    storageLocation: StorageLocation;
+  };
+  getData(): any[];
+  printLog(): any[];
+}
+```
+
+### DataContextConfig
+
+Configuration object for DataContext (v3.0.0+):
+
+```typescript
+interface DataContextConfig {
+  storageKey?: string; // Default: "Items"
+  storageLocation?: StorageLocation; // Default: localStorage
+  logger?: Logger | null; // Optional logger instance
+  loggingEnabled?: boolean; // Default: false
+}
+```
+
+### Types
+
+```typescript
+// Storage location type
+export enum StorageLocations {
+  SessionStorage = "sessionStorage",
+  LocalStorage = "localStorage",
+}
+export type StorageLocation = `${StorageLocations}`;
+
+// Storage item interface
+export interface StorageItem {
+  name: string;
+  value: string;
+}
+
+// Database settings
+export interface DatabaseSettings {
+  storageKey: string;
+  storageLocation: StorageLocation;
+  loggingEnabled: boolean;
+}
+```
+
+### Error Types
+
+v3.0.0 provides 6 custom error classes for specific error handling.
+
+📖 **Full error documentation:** [API.md - Error Classes](./docs/API.md#error-classes) | [Examples](./docs/EXAMPLES.md#error-handling)
+
+```typescript
+import {
+  PersistenceServiceNotEnabled,
+  DataServiceUnavailable,
+  StorageKeyError,
+  StorageLocationError,
+  DataRetrievalError,
+  StorageQuotaError, // NEW in December 2025
+} from "i45";
+
+try {
+  await context.store(data);
+} catch (error) {
+  if (error instanceof StorageKeyError) {
+    console.error("Invalid storage key:", error.key);
+  } else if (error instanceof StorageQuotaError) {
+    console.error("Storage full:", error.key, error.storageType);
+  } else if (error instanceof DataRetrievalError) {
+    console.error("Failed to retrieve:", error.key, "Cause:", error.cause);
+  } else if (error instanceof StorageLocationError) {
+    console.error(
+      "Invalid location:",
+      error.location,
+      "Valid:",
+      error.validLocations
+    );
+  }
+}
+```
+
+## Migration from v2.x
+
+v3.0.0 includes breaking changes and major architectural improvements. See [MIGRATION.md](./docs/MIGRATION.md) for the complete migration guide.
+
+### Key Changes
+
+1. **New Architecture**: Modular design with service orchestration (December 2025)
+2. **Config Object Pattern**: New recommended way to initialize DataContext
+3. **TypeScript First**: Full TypeScript rewrite with generic types
+4. **Explicit Methods**: `store()`, `storeAs()`, `storeAt()` instead of overloaded signatures
+5. **6 Custom Errors**: Specific error classes for better error handling
+6. **Centralized Validation**: `ValidationUtils` for consistent validation
+7. **Zero Duplication**: 300+ lines of duplicate code eliminated
+8. **Property Names**: `StorageItem.Name` → `name`, `StorageItem.Value` → `value` (camelCase)
+9. **Async Operations**: All storage operations return Promises
+
+### Quick Migration Example
+
+```javascript
+// v2.x (Old)
+const context = new DataContext();
+context.setStorageKey("MyData");
+context.store(data); // May not be async
+
+// v3.x (New - Config Object)
+const context = new DataContext({
+  storageKey: "MyData",
+  loggingEnabled: true,
+});
+await context.store(data); // Always async
+
+// v3.x (New - Legacy Constructor)
+const context = new DataContext("MyData");
+await context.store(data); // Always async
+```
+
+For detailed migration steps, error handling examples, and troubleshooting, see [MIGRATION.md](./docs/MIGRATION.md).
+
+## Browser Support
+
+- Chrome/Edge: Latest 2 versions
+- Firefox: Latest 2 versions
+- Safari: Latest 2 versions
+- Modern browsers with ES2015+ support
+
+## Requirements
+
+- Node.js 16+ (for development)
+- Modern browser with localStorage/sessionStorage support
+
+## Framework Integration
+
+- **React:** See [EXAMPLES.md - React Integration](./docs/EXAMPLES.md#react-integration)
+- **Vue:** See [EXAMPLES.md - Vue Integration](./docs/EXAMPLES.md#vue-integration)
+- **TypeScript:** See [TYPESCRIPT.md](./docs/TYPESCRIPT.md) for type-safe integration patterns
+
+## Testing
+
+i45 v3.0.0 includes comprehensive testing:
+
+- **172 tests** with Jest
+- **92.08% statement coverage**
+- Unit tests for all components
+- Type safety tests
+- Error handling tests
+
+```bash
+# Run tests
+npm test
+
+# Run tests with coverage
+npm run test:coverage
+
+# Watch mode
+npm run test:watch
+```
+
+📖 **Testing examples:** [EXAMPLES.md - Testing Examples](./docs/EXAMPLES.md#testing-examples)
+
+## Documentation
+
+### Core Documentation
+
+- **[README.md](./README.md)** - This file (getting started and quick reference)
+- **[API.md](./docs/API.md)** - Complete API reference with all methods, properties, and error classes
+- **[TYPESCRIPT.md](./docs/TYPESCRIPT.md)** - TypeScript usage guide with patterns and best practices
+- **[EXAMPLES.md](./docs/EXAMPLES.md)** - 20+ comprehensive examples including React/Vue integration
+- **[MIGRATION.md](./docs/MIGRATION.md)** - Complete v2.x → v3.x migration guide
+
+### Additional Resources
+
+- **[CHANGES.md](./CHANGES.md)** - Version history and changelog
+- **[REFACTORING-SUMMARY.md](../../../Documents/Orion/Projects/i45/REFACTORING-SUMMARY.md)** - December 2025 refactoring details
+
+## License
+
+MIT © [CIS Guru](mailto:cisguru@outlook.com)
+
+## Links
+
+- [npm package](https://www.npmjs.com/package/i45)
+- [GitHub Repository](https://github.com/xnodeoncode/i45)
+- [Issue Tracker](https://github.com/xnodeoncode/i45/issues)
+- [i45-jslogger](https://www.npmjs.com/package/i45-jslogger) - Logging support
+- [i45-sample-data](https://www.npmjs.com/package/i45-sample-data) - Sample datasets
+
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
+
+## Changelog
+
+See [CHANGES.md](./CHANGES.md) for version history and release notes.

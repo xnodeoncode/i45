@@ -1,5 +1,72 @@
 # i45 Revisions
 
+## v3.0.0-alpha.1
+
+### December 19, 2025
+
+This is a major release representing a complete TypeScript migration and architectural overhaul of the i45 library.
+
+**Breaking Changes:**
+
+- **TypeScript Migration**: Entire codebase rewritten in TypeScript with full type safety
+- **Generic DataContext**: Main class is now generic `DataContext<T>` for type-safe storage operations
+- **Property Name Changes**: `StorageItem` now uses camelCase: `name` and `value` (previously `Name` and `Value`)
+- **Logger Changes**: Removed `iLogger` and `iLoggerValidator` exports (simplified to just `Logger` from i45-jslogger)
+
+**New Features:**
+
+- TypeScript type definitions (`.d.ts`) generated for all exports
+- Strict type checking with TypeScript compiler
+- ESM build output with source maps
+- Generic type support: `DataContext<T>` for type-safe operations
+- Abstract `BaseStorageService` class with `IStorageService` interface
+
+**Improvements:**
+
+- Fixed typo in package.json description: "brower" → "browser"
+- Removed duplicate `dataService.js` file
+- All models converted to TypeScript interfaces/enums
+- All services use proper inheritance pattern
+- Better error handling with typed exceptions
+- Comprehensive type safety throughout codebase
+
+**Build System:**
+
+- Rollup bundler with TypeScript plugin
+- Automatic type declaration generation
+- Source maps for debugging
+- Clean ESM output format
+
+**Files Changed:**
+
+- All `.js` files converted to `.ts`
+- New models: `storageLocations.ts`, `storageItem.ts`, `databaseSettings.ts`, `exceptions.ts`
+- New services: `baseStorageService.ts`, `localStorageService.ts`, `sessionStorageService.ts`
+- Main: `dataContext.ts` (now generic), `index.ts` (entry point)
+- Build: `rollup.config.js`, updated `tsconfig.json`
+
+**Migration Guide:**
+
+```typescript
+// v2.x (JavaScript)
+const context = new DataContext();
+await context.store([{ id: 1, name: "Test" }]);
+
+// v3.x (TypeScript)
+interface User {
+  id: number;
+  name: string;
+}
+const context = new DataContext<User>();
+await context.store([{ id: 1, name: "Test" }]); // Type-safe!
+```
+
+**Requirements:**
+
+- Node.js 16+ recommended
+- TypeScript 5.x for type checking (if using TypeScript)
+- Modern browsers with ES2015+ support
+
 ## v0.0.0-alpha.4
 
 ### October 3, 2024
