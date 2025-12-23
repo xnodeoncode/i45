@@ -3,6 +3,30 @@
  * Runs before all tests to configure the test environment
  */
 
+import { beforeEach, expect } from "@jest/globals";
+
+// Polyfill for structuredClone (required for fake-indexeddb in older Node versions)
+if (typeof structuredClone === "undefined") {
+  global.structuredClone = (obj: any) => {
+    // Handle primitives and null
+    if (obj === null || typeof obj !== "object") {
+      return obj;
+    }
+    // Deep clone for objects
+    if (Array.isArray(obj)) {
+      return obj.map((item) => structuredClone(item));
+    }
+    // Deep clone for plain objects
+    const cloned: any = {};
+    for (const key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        cloned[key] = structuredClone(obj[key]);
+      }
+    }
+    return cloned;
+  };
+}
+
 // Mock browser storage APIs
 class MockStorage implements Storage {
   private store: Map<string, string> = new Map();

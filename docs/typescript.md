@@ -185,6 +185,40 @@ await context.store([
 ]);
 ```
 
+### Storage Location Type
+
+```typescript
+import { StorageLocations, type StorageLocation } from "i45";
+
+interface DataItem {
+  id: number;
+  data: string;
+}
+
+// Type-safe storage location selection
+function createStorageContext<T>(
+  key: string,
+  location: StorageLocation
+): DataContext<T> {
+  return new DataContext<T>({
+    storageKey: key,
+    storageLocation: location,
+  });
+}
+
+// Usage with IndexedDB
+const largeDataContext = createStorageContext<DataItem>(
+  "LargeData",
+  StorageLocations.IndexedDB // Type-safe!
+);
+
+// TypeScript error for invalid location
+const invalid = createStorageContext<DataItem>(
+  "Data",
+  "invalidStorage" as any // Error!
+);
+```
+
 ### Enum Types
 
 ```typescript
@@ -686,10 +720,10 @@ console.log(users?.[0]?.name);
 
 ## See Also
 
-- [API.md](./API.md) - Complete API reference
+- [api.md](./api.md) - Complete API reference
 - [README.md](../README.md) - Getting started
-- [EXAMPLES.md](./EXAMPLES.md) - More examples
-- [MIGRATION.md](./MIGRATION.md) - Migration guide
+- [examples.md](./examples.md) - More examples
+- [migration.md](./migration.md) - Migration guide
 
 ---
 

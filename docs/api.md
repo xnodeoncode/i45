@@ -474,16 +474,34 @@ const context = new DataContext<Preferences>(config);
 enum StorageLocations {
   LocalStorage = "localStorage",
   SessionStorage = "sessionStorage",
+  IndexedDB = "indexedDB", // NEW in v3.0.1
 }
 ```
+
+**Storage Capacities:**
+
+- **LocalStorage**: ~5-10MB (synchronous, key-value)
+- **SessionStorage**: ~5-10MB (synchronous, session-only)
+- **IndexedDB**: ~50MB+ (asynchronous, database with transactions)
 
 **Usage:**
 
 ```typescript
 import { StorageLocations } from "i45";
 
-const context = new DataContext({
+// Use localStorage (default)
+const localContext = new DataContext({
+  storageLocation: StorageLocations.LocalStorage,
+});
+
+// Use sessionStorage
+const sessionContext = new DataContext({
   storageLocation: StorageLocations.SessionStorage,
+});
+
+// Use IndexedDB for large datasets
+const indexedContext = new DataContext({
+  storageLocation: StorageLocations.IndexedDB,
 });
 ```
 
@@ -868,10 +886,10 @@ await context.store(SampleData.JsonData.Books);
 ## See Also
 
 - [README.md](../README.md) - Getting started guide
-- [MIGRATION.md](./MIGRATION.md) - Migration from v2.x
-- [TYPESCRIPT.md](./TYPESCRIPT.md) - TypeScript usage guide
-- [EXAMPLES.md](./EXAMPLES.md) - Comprehensive examples
-- [CHANGES.md](../CHANGES.md) - Version history
+- [migration.md](./migration.md) - Migration from v2.x
+- [typescript.md](./typescript.md) - TypeScript usage guide
+- [examples.md](./examples.md) - Comprehensive examples
+- [revisions.md](./revisions.md) - Version history
 
 ---
 

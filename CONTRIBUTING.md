@@ -107,11 +107,11 @@ i45/
 │   ├── test-utils.ts      # Testing utilities
 │   └── *.test.ts          # Test files
 ├── docs/                  # Documentation
-│   ├── API.md             # API reference
-│   ├── TYPESCRIPT.md      # TypeScript guide
-│   ├── EXAMPLES.md        # Usage examples
-│   ├── MIGRATION.md       # Migration guide
-│   └── TESTING.md         # Testing documentation
+│   ├── api.md             # API reference
+│   ├── typescript.md      # TypeScript guide
+│   ├── examples.md        # Usage examples
+│   ├── migration.md       # Migration guide
+│   └── testing.md         # Testing documentation
 ├── dist/                  # Compiled output (generated)
 ├── package.json           # Package configuration
 ├── tsconfig.json          # TypeScript configuration
@@ -427,10 +427,10 @@ Any other relevant information.
 ### Documentation
 
 - **README:** [README.md](./README.md) - Getting started
-- **API Reference:** [docs/API.md](./docs/API.md) - Complete API documentation
-- **TypeScript Guide:** [docs/TYPESCRIPT.md](./docs/TYPESCRIPT.md) - TypeScript usage
-- **Examples:** [docs/EXAMPLES.md](./docs/EXAMPLES.md) - Comprehensive examples
-- **Migration Guide:** [docs/MIGRATION.md](./docs/MIGRATION.md) - v2.x → v3.x migration
+- **API Reference:** [docs/api.md](./docs/api.md) - Complete API documentation
+- **TypeScript Guide:** [docs/typescript.md](./docs/typescript.md) - TypeScript usage
+- **Examples:** [docs/examples.md](./docs/examples.md) - Comprehensive examples
+- **Migration Guide:** [docs/migration.md](./docs/migration.md) - v2.x → v3.x migration
 
 ### Community
 
@@ -441,9 +441,9 @@ Any other relevant information.
 ### Development Questions
 
 If you have questions about:
-- **Architecture:** Review [docs/API.md](./docs/API.md) architecture section
-- **Testing:** See [docs/EXAMPLES.md](./docs/EXAMPLES.md) testing examples
-- **TypeScript:** Check [docs/TYPESCRIPT.md](./docs/TYPESCRIPT.md)
+- **Architecture:** Review [docs/api.md](./docs/api.md) architecture section
+- **Testing:** See [docs/examples.md](./docs/examples.md) testing examples
+- **TypeScript:** Check [docs/typescript.md](./docs/typescript.md)
 - **Still stuck?** Open a discussion on GitHub
 
 ---
@@ -458,7 +458,7 @@ By contributing to i45, you agree that your contributions will be licensed under
 
 Contributors will be recognized in:
 - GitHub contributors page
-- CHANGES.md for significant contributions
+- revisions.md for significant contributions
 - Special thanks in release notes
 
 Thank you for contributing to i45! 🎉

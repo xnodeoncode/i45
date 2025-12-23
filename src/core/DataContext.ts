@@ -8,12 +8,21 @@ import { SampleData } from "i45-sample-data";
 import {
   StorageLocations,
   type StorageLocation,
-} from "../models/storageLocations.js";
+} from "../models/StorageLocations.js";
 import { StorageManager } from "./StorageManager.js";
 import { ValidationUtils } from "../utils/ValidationUtils.js";
 import { ErrorHandler } from "../utils/ErrorHandler.js";
 import type { DataContextConfig } from "../models/DataContextConfig.js";
 import { mergeConfig } from "../models/DataContextConfig.js";
+import type { StorageInfo } from "../models/StorageInfo.js";
+import {
+  type StorageMetadata,
+  createMetadata,
+  updateMetadata,
+  hasMetadata,
+  getMetadataInfo,
+} from "../models/StorageMetadata.js";
+import { CrossTabManager } from "../sync/CrossTabManager.js";
 
 /**
  * Export dependencies for use in consuming modules
@@ -54,6 +63,11 @@ export class DataContext<T = any> {
   #dataStores: any[] = [];
   #storageManager: StorageManager;
   #errorHandler: ErrorHandler;
+  #trackTimestamps: boolean;
+  #crossTabManager?: CrossTabManager<T>;
+  #syncManager?: any; // SyncManager<T> - using any to avoid circular dependency
+  #migrationManager?: any; // MigrationManager<T> - using any to avoid circular dependency
+  #autoMigrate: boolean;
 
   #logActions = {
     Store: "STORE",
@@ -84,7 +98,7 @@ export class DataContext<T = any> {
     storageLocation?: StorageLocation
   ) {
     // Handle backward compatibility: constructor(storageKey, storageLocation)
-    let finalConfig: Required<DataContextConfig>;
+    let finalConfig: ReturnType<typeof mergeConfig>;
 
     if (typeof config === "string") {
       // Legacy: constructor(storageKey: string, storageLocation?: StorageLocation)
@@ -99,6 +113,8 @@ export class DataContext<T = any> {
 
     this.#storageKey = finalConfig.storageKey;
     this.#storageLocation = finalConfig.storageLocation;
+    this.#trackTimestamps = finalConfig.trackTimestamps;
+    this.#autoMigrate = finalConfig.autoMigrate;
 
     this.#errorHandler = new ErrorHandler(
       finalConfig.logger,
@@ -106,6 +122,16 @@ export class DataContext<T = any> {
     );
 
     this.#storageManager = new StorageManager(this.#errorHandler);
+
+    // Initialize cross-tab sync if enabled
+    if (finalConfig.enableCrossTabSync) {
+      this.#initializeCrossTabSync(finalConfig);
+    }
+
+    // Initialize migration manager if version/migrations configured
+    if (finalConfig.version || finalConfig.migrations) {
+      this.#initializeMigrationManager(finalConfig);
+    }
   }
 
   // ============================================================================
@@ -322,10 +348,56 @@ export class DataContext<T = any> {
       this.#errorHandler.warn("Storing an empty array");
     }
 
+    // Mark items for sync if server sync is enabled
+    let itemsToStore = items;
+    if (this.#syncManager?.isActive()) {
+      itemsToStore = items.map((item: any) => ({
+        ...item,
+        _needsSync: true,
+        _syncAttempts: item._syncAttempts || 0,
+      }));
+    }
+
+    // Wrap with metadata if timestamp tracking is enabled
+    let dataToStore: any = this.#trackTimestamps
+      ? await this.#wrapWithMetadata(
+          this.#storageKey,
+          this.#storageLocation,
+          itemsToStore
+        )
+      : itemsToStore;
+
+    // Wrap with version metadata if migration manager is configured
+    if (this.#migrationManager) {
+      const { createVersionedData } = await import(
+        "../models/VersionMetadata.js"
+      );
+      const version = this.#migrationManager.getCurrentVersion();
+
+      // Get existing metadata if present
+      const existingData = await this.#storageManager.retrieve<any>(
+        this.#storageKey,
+        this.#storageLocation
+      );
+
+      const { isVersionedData } = await import("../models/VersionMetadata.js");
+
+      // Preserve migration history if updating existing versioned data
+      const migrationHistory =
+        existingData && isVersionedData(existingData)
+          ? existingData.migrationHistory
+          : [];
+
+      dataToStore = {
+        ...createVersionedData(dataToStore, version),
+        migrationHistory,
+      };
+    }
+
     await this.#storageManager.store(
       this.#storageKey,
       this.#storageLocation,
-      items
+      dataToStore
     );
 
     this.#logDataEntry(
@@ -334,6 +406,11 @@ export class DataContext<T = any> {
       this.#storageLocation,
       items
     );
+
+    // Broadcast to other tabs if cross-tab sync is enabled
+    if (this.#crossTabManager?.isActive()) {
+      await this.#crossTabManager.broadcast(items);
+    }
 
     return this;
   }
@@ -363,7 +440,16 @@ export class DataContext<T = any> {
 
     ValidationUtils.validateArray(items, "items");
 
-    await this.#storageManager.store(storageKey, this.#storageLocation, items);
+    // Wrap with metadata if timestamp tracking is enabled
+    const dataToStore = this.#trackTimestamps
+      ? await this.#wrapWithMetadata(storageKey, this.#storageLocation, items)
+      : items;
+
+    await this.#storageManager.store(
+      storageKey,
+      this.#storageLocation,
+      dataToStore
+    );
 
     this.#logDataEntry(
       this.#logActions.Store,
@@ -395,7 +481,12 @@ export class DataContext<T = any> {
     ValidationUtils.validateStorageLocation(storageLocation);
     ValidationUtils.validateArray(items, "items");
 
-    await this.#storageManager.store(storageKey, storageLocation, items);
+    // Wrap with metadata if timestamp tracking is enabled
+    const dataToStore = this.#trackTimestamps
+      ? await this.#wrapWithMetadata(storageKey, storageLocation, items)
+      : items;
+
+    await this.#storageManager.store(storageKey, storageLocation, dataToStore);
 
     this.#logDataEntry(
       this.#logActions.Store,
@@ -413,6 +504,7 @@ export class DataContext<T = any> {
 
   /**
    * Retrieves items from default storage key and location
+   * If migrations are configured and needed, automatically runs them
    *
    * @returns Array of stored items
    *
@@ -420,10 +512,37 @@ export class DataContext<T = any> {
    * const items = await context.retrieve();
    */
   async retrieve(): Promise<T[]> {
-    return await this.#storageManager.retrieve<T>(
+    let data = await this.#storageManager.retrieve<any>(
       this.#storageKey,
       this.#storageLocation
     );
+
+    // Check if auto-migration is needed
+    if (
+      this.#migrationManager &&
+      this.#autoMigrate &&
+      data &&
+      data.length > 0 &&
+      this.#migrationManager.needsMigration(data)
+    ) {
+      if (this.loggingEnabled) {
+        this.#errorHandler.info("Auto-migration triggered");
+      }
+
+      // Run migration
+      const migratedData = await this.#migrationManager.migrate(data);
+
+      // Save migrated data
+      await this.#storageManager.store(
+        this.#storageKey,
+        this.#storageLocation,
+        migratedData
+      );
+
+      data = migratedData;
+    }
+
+    return this.#unwrapMetadata(data);
   }
 
   /**
@@ -438,10 +557,12 @@ export class DataContext<T = any> {
   async retrieveFrom(storageKey: string): Promise<T[]> {
     ValidationUtils.validateStorageKey(storageKey);
 
-    return await this.#storageManager.retrieve<T>(
+    const data = await this.#storageManager.retrieve<any>(
       storageKey,
       this.#storageLocation
     );
+
+    return this.#unwrapMetadata(data);
   }
 
   /**
@@ -461,7 +582,12 @@ export class DataContext<T = any> {
     ValidationUtils.validateStorageKey(storageKey);
     ValidationUtils.validateStorageLocation(storageLocation);
 
-    return await this.#storageManager.retrieve<T>(storageKey, storageLocation);
+    const data = await this.#storageManager.retrieve<any>(
+      storageKey,
+      storageLocation
+    );
+
+    return this.#unwrapMetadata(data);
   }
 
   // ============================================================================
@@ -485,6 +611,11 @@ export class DataContext<T = any> {
       this.#storageLocation,
       []
     );
+
+    // Broadcast remove to other tabs if cross-tab sync is enabled
+    if (this.#crossTabManager?.isActive()) {
+      await this.#crossTabManager.broadcastRemove();
+    }
 
     return this;
   }
@@ -556,12 +687,306 @@ export class DataContext<T = any> {
    */
   async clear(): Promise<this> {
     await this.#storageManager.clear(this.#storageLocation);
+
+    // Broadcast clear to other tabs if cross-tab sync is enabled
+    if (this.#crossTabManager?.isActive()) {
+      await this.#crossTabManager.broadcastClear();
+    }
+
     return this;
+  }
+
+  // ============================================================================
+  // Metadata Methods
+  // ============================================================================
+
+  /**
+   * Gets metadata information (timestamps, version) for stored data
+   *
+   * Returns metadata if timestamp tracking is enabled and data has been stored.
+   * Returns null if timestamp tracking is disabled or no data exists.
+   *
+   * @returns Promise resolving to metadata info or null
+   *
+   * @example
+   * const metadata = await context.getMetadata();
+   * if (metadata) {
+   *   console.log(`Created: ${metadata.createdAt}`);
+   *   console.log(`Updated: ${metadata.updatedAt}`);
+   *   console.log(`Version: ${metadata.version}`);
+   * }
+   */
+  async getMetadata(): Promise<Omit<StorageMetadata<T>, "items"> | null> {
+    const data = await this.#storageManager.retrieve<any>(
+      this.#storageKey,
+      this.#storageLocation
+    );
+
+    if (data && hasMetadata(data)) {
+      return getMetadataInfo(data);
+    }
+
+    return null;
+  }
+
+  /**
+   * Gets metadata from a custom storage key
+   *
+   * @param storageKey - The key to get metadata from
+   * @returns Promise resolving to metadata info or null
+   *
+   * @example
+   * const metadata = await context.getMetadataFrom("CustomKey");
+   */
+  async getMetadataFrom(
+    storageKey: string
+  ): Promise<Omit<StorageMetadata<T>, "items"> | null> {
+    ValidationUtils.validateStorageKey(storageKey);
+
+    const data = await this.#storageManager.retrieve<any>(
+      storageKey,
+      this.#storageLocation
+    );
+
+    if (data && hasMetadata(data)) {
+      return getMetadataInfo(data);
+    }
+
+    return null;
+  }
+
+  /**
+   * Gets metadata from a custom storage key and location
+   *
+   * @param storageKey - The key to get metadata from
+   * @param storageLocation - The storage location
+   * @returns Promise resolving to metadata info or null
+   *
+   * @example
+   * const metadata = await context.getMetadataAt("Key", StorageLocations.SessionStorage);
+   */
+  async getMetadataAt(
+    storageKey: string,
+    storageLocation: StorageLocation
+  ): Promise<Omit<StorageMetadata<T>, "items"> | null> {
+    ValidationUtils.validateStorageKey(storageKey);
+    ValidationUtils.validateStorageLocation(storageLocation);
+
+    const data = await this.#storageManager.retrieve<any>(
+      storageKey,
+      storageLocation
+    );
+
+    if (data && hasMetadata(data)) {
+      return getMetadataInfo(data);
+    }
+
+    return null;
+  }
+
+  // ============================================================================
+  // Storage Quota Methods
+  // ============================================================================
+
+  /**
+   * Gets remaining storage quota information using the Storage API
+   *
+   * This method provides overall storage quota information for the origin.
+   * Note: Only supported in browsers that implement the Storage API.
+   *
+   * @returns Promise resolving to StorageInfo with quota details
+   * @throws {Error} If Storage API is not supported
+   *
+   * @example
+   * const info = await context.getRemainingStorage();
+   * console.log(`${info.remaining} bytes remaining (${info.percentUsed}% used)`);
+   */
+  async getRemainingStorage(): Promise<StorageInfo> {
+    if (!navigator.storage || !navigator.storage.estimate) {
+      throw new Error("Storage API is not supported in this browser");
+    }
+
+    const estimate = await navigator.storage.estimate();
+    const quota = estimate.quota || 0;
+    const usage = estimate.usage || 0;
+    const remaining = quota - usage;
+    const percentUsed = quota > 0 ? Math.round((usage / quota) * 100) : 0;
+
+    return {
+      type: "overall",
+      quota,
+      usage,
+      remaining,
+      percentUsed,
+      isEstimate: true,
+    };
+  }
+
+  /**
+   * Gets storage quota information for a specific storage location
+   *
+   * For IndexedDB, uses the Storage API for accurate quota information.
+   * For localStorage/sessionStorage, provides estimated capacity based on typical browser limits.
+   *
+   * @param location - Optional storage location. Defaults to the configured storage location.
+   * @returns Promise resolving to StorageInfo for the specified location
+   * @throws {Error} If Storage API is not supported (for IndexedDB queries)
+   *
+   * @example
+   * // Get quota for default storage location
+   * const info = await context.getStorageInfo();
+   *
+   * @example
+   * // Get quota for specific location
+   * const info = await context.getStorageInfo(StorageLocation.IndexedDB);
+   * console.log(`IndexedDB: ${info.remaining} bytes remaining`);
+   */
+  async getStorageInfo(location?: StorageLocation): Promise<StorageInfo> {
+    const storageLocation = location || this.#storageLocation;
+
+    if (storageLocation === StorageLocations.IndexedDB) {
+      return this.#getIndexedDBQuota();
+    } else {
+      return this.#getWebStorageQuota(storageLocation);
+    }
   }
 
   // ============================================================================
   // Private Helper Methods
   // ============================================================================
+
+  /**
+   * Gets quota information for IndexedDB using the Storage API
+   * @private
+   */
+  async #getIndexedDBQuota(): Promise<StorageInfo> {
+    if (!navigator.storage || !navigator.storage.estimate) {
+      throw new Error("Storage API is not supported in this browser");
+    }
+
+    const estimate = await navigator.storage.estimate();
+    const quota = estimate.quota || 0;
+    const usage = estimate.usage || 0;
+    const remaining = quota - usage;
+    const percentUsed = quota > 0 ? Math.round((usage / quota) * 100) : 0;
+
+    return {
+      type: "IndexedDB",
+      quota,
+      usage,
+      remaining,
+      percentUsed,
+      isEstimate: true,
+    };
+  }
+
+  /**
+   * Gets estimated quota information for Web Storage (localStorage/sessionStorage)
+   *
+   * Since Web Storage doesn't provide a native quota API, this method:
+   * 1. Uses typical browser limits as estimated quota (5-10MB)
+   * 2. Measures actual usage by calculating stored data size
+   *
+   * @private
+   */
+  async #getWebStorageQuota(location: StorageLocation): Promise<StorageInfo> {
+    // Typical browser limits for Web Storage
+    const ESTIMATED_QUOTA = 10 * 1024 * 1024; // 10MB estimate (conservative)
+
+    const storageType =
+      location === StorageLocations.LocalStorage
+        ? "localStorage"
+        : "sessionStorage";
+    const storage =
+      location === StorageLocations.LocalStorage
+        ? localStorage
+        : sessionStorage;
+
+    // Calculate actual usage by measuring stored data
+    let usage = 0;
+    for (let i = 0; i < storage.length; i++) {
+      const key = storage.key(i);
+      if (key) {
+        const value = storage.getItem(key) || "";
+        // Each character is 2 bytes in UTF-16
+        usage += (key.length + value.length) * 2;
+      }
+    }
+
+    const remaining = ESTIMATED_QUOTA - usage;
+    const percentUsed = Math.round((usage / ESTIMATED_QUOTA) * 100);
+
+    return {
+      type: storageType,
+      quota: ESTIMATED_QUOTA,
+      usage,
+      remaining,
+      percentUsed,
+      isEstimate: true,
+    };
+  }
+
+  /**
+   * Wraps data with metadata if it doesn't already have it, or updates existing metadata
+   * @private
+   */
+  async #wrapWithMetadata(
+    storageKey: string,
+    storageLocation: StorageLocation,
+    items: T[]
+  ): Promise<any> {
+    // Check if existing data has metadata
+    const existingData = await this.#storageManager.retrieve<any>(
+      storageKey,
+      storageLocation
+    );
+
+    if (existingData && hasMetadata(existingData)) {
+      // Update existing metadata
+      return updateMetadata(existingData, items);
+    } else {
+      // Create new metadata
+      return createMetadata(items);
+    }
+  }
+
+  /**
+   * Unwraps metadata to return just the items, or returns data as-is if no metadata
+   * Handles both timestamp metadata and version metadata
+   * @private
+   */
+  #unwrapMetadata(data: any): T[] {
+    if (!data) {
+      return [];
+    }
+
+    // Check if data is version metadata wrapper
+    if (
+      data &&
+      typeof data === "object" &&
+      "version" in data &&
+      "items" in data &&
+      Array.isArray(data.items)
+    ) {
+      // It's versioned data, extract items
+      const items = data.items;
+
+      // Check if items are wrapped with timestamp metadata
+      if (items.length > 0 && hasMetadata(items[0])) {
+        return items[0].items as T[];
+      }
+
+      return items as T[];
+    }
+
+    // Check if data is a metadata wrapper
+    if (hasMetadata(data)) {
+      return data.items as T[];
+    }
+
+    // Return data as-is if no metadata (backward compatibility)
+    return Array.isArray(data) ? data : [];
+  }
 
   /**
    * Logs a data operation entry
@@ -620,5 +1045,339 @@ export class DataContext<T = any> {
         this.#errorHandler.warn(`Unknown action type: ${action}`);
         break;
     }
+  }
+
+  // ============================================================================
+  // Cross-Tab Synchronization
+  // ============================================================================
+
+  /**
+   * Initializes cross-tab synchronization
+   *
+   * @param config - DataContext configuration
+   */
+  #initializeCrossTabSync(config: DataContextConfig): void {
+    try {
+      this.#crossTabManager = new CrossTabManager<T>({
+        storageKey: this.#storageKey,
+        storageLocation: this.#storageLocation,
+        onUpdate: config.onCrossTabUpdate,
+        onRemove: config.onCrossTabRemove,
+        onClear: config.onCrossTabClear,
+      });
+
+      if (this.loggingEnabled && this.#crossTabManager.isActive()) {
+        this.#errorHandler.info(
+          `Cross-tab sync initialized using ${this.#crossTabManager.getSyncMethod()}`
+        );
+      }
+    } catch (error) {
+      this.#errorHandler.warn(
+        `Failed to initialize cross-tab sync: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
+  }
+
+  /**
+   * Manually refresh data from other tabs' changes
+   * Forces a retrieve operation to get the latest data
+   *
+   * @returns Array of items with latest changes from other tabs
+   *
+   * @example
+   * const latestItems = await context.refreshFromCrossTab();
+   */
+  async refreshFromCrossTab(): Promise<T[]> {
+    return await this.retrieve();
+  }
+
+  /**
+   * Checks if cross-tab sync is enabled and active
+   *
+   * @returns true if cross-tab sync is functioning
+   *
+   * @example
+   * if (context.isCrossTabSyncActive()) {
+   *   console.log("Changes will sync across tabs");
+   * }
+   */
+  isCrossTabSyncActive(): boolean {
+    return this.#crossTabManager?.isActive() ?? false;
+  }
+
+  /**
+   * Gets the cross-tab sync method being used
+   *
+   * @returns "broadcast" | "storage-events" | "none"
+   *
+   * @example
+   * const method = context.getCrossTabSyncMethod();
+   * console.log(`Using ${method} for cross-tab sync`);
+   */
+  getCrossTabSyncMethod(): "broadcast" | "storage-events" | "none" {
+    return this.#crossTabManager?.getSyncMethod() ?? "none";
+  }
+
+  /**
+   * Gets the unique identifier for the current tab
+   * Only available when using BroadcastChannel
+   *
+   * @returns Tab ID or undefined
+   *
+   * @example
+   * const tabId = context.getTabId();
+   * if (tabId) {
+   *   console.log(`This is tab ${tabId}`);
+   * }
+   */
+  getTabId(): string | undefined {
+    return this.#crossTabManager?.getTabId();
+  }
+
+  /**
+   * Cleans up resources including cross-tab sync and server sync
+   * Call this when the DataContext is no longer needed
+   *
+   * @example
+   * context.destroy();
+   */
+  destroy(): void {
+    this.#crossTabManager?.close();
+    this.#syncManager?.disable();
+  }
+
+  // ==========================================
+  // Server Sync Methods
+  // ==========================================
+
+  /**
+   * Enable server synchronization with configuration
+   * Requires trackTimestamps to be enabled
+   *
+   * @param config - Sync configuration
+   * @throws Error if trackTimestamps is not enabled
+   *
+   * @example
+   * await context.enableSync({
+   *   endpoint: "/api/orders",
+   *   strategy: "queued",
+   *   conflictResolution: "last-write-wins",
+   *   maxRetries: 3,
+   *   onSyncComplete: (result) => {
+   *     console.log(`Synced ${result.success} items`);
+   *   }
+   * });
+   */
+  async enableSync(config: any): Promise<void> {
+    if (!this.#trackTimestamps) {
+      throw new Error(
+        "Server sync requires trackTimestamps to be enabled. " +
+          "Set trackTimestamps: true in DataContext configuration."
+      );
+    }
+
+    // Dynamic import to avoid circular dependency
+    const { SyncManager } = await import("../sync/SyncManager.js");
+
+    this.#syncManager = new SyncManager(this, config);
+    await this.#syncManager.enable();
+
+    if (this.loggingEnabled) {
+      this.#errorHandler.info(
+        `Server sync initialized with ${config.strategy} strategy`
+      );
+    }
+  }
+
+  /**
+   * Disable server synchronization
+   * Stops all sync operations and clears the sync manager
+   *
+   * @example
+   * context.disableSync();
+   */
+  disableSync(): void {
+    if (this.#syncManager) {
+      this.#syncManager.disable();
+      this.#syncManager = undefined;
+
+      if (this.loggingEnabled) {
+        this.#errorHandler.info("Server sync disabled");
+      }
+    }
+  }
+
+  /**
+   * Manually trigger a sync operation
+   * Syncs all pending changes to the server
+   *
+   * @returns Sync result with success/failed/conflicts counts
+   * @throws Error if sync is not enabled
+   *
+   * @example
+   * const result = await context.sync();
+   * console.log(`Synced ${result.success} items, ${result.failed} failed`);
+   */
+  async sync(): Promise<any> {
+    if (!this.#syncManager) {
+      throw new Error("Server sync is not enabled. Call enableSync() first.");
+    }
+
+    return await this.#syncManager.sync();
+  }
+
+  /**
+   * Get current sync status
+   * Returns information about pending, synced, and failed items
+   *
+   * @returns Sync status or null if sync not enabled
+   *
+   * @example
+   * const status = context.getSyncStatus();
+   * if (status) {
+   *   console.log(`Pending: ${status.pending}, Synced: ${status.synced}`);
+   * }
+   */
+  getSyncStatus(): any | null {
+    return this.#syncManager?.getStatus() || null;
+  }
+
+  /**
+   * Check if server sync is enabled and active
+   *
+   * @returns true if server sync is active
+   *
+   * @example
+   * if (context.isSyncActive()) {
+   *   console.log("Changes will sync to server");
+   * }
+   */
+  isSyncActive(): boolean {
+    return this.#syncManager?.isActive() ?? false;
+  }
+
+  // ==========================================
+  // Data Migration Methods
+  // ==========================================
+
+  /**
+   * Manually trigger data migration
+   * Migrates data from its current version to the configured target version
+   *
+   * @returns Promise that resolves when migration completes
+   * @throws {MigrationError} If migration fails or is not configured
+   *
+   * @example
+   * await context.migrate();
+   */
+  async migrate(): Promise<void> {
+    if (!this.#migrationManager) {
+      throw new Error(
+        "Data versioning is not configured. " +
+          "Set version and migrations in DataContext configuration."
+      );
+    }
+
+    const rawData = await this.#storageManager.retrieve<any>(
+      this.#storageKey,
+      this.#storageLocation
+    );
+
+    if (!rawData || (Array.isArray(rawData) && rawData.length === 0)) {
+      if (this.loggingEnabled) {
+        this.#errorHandler.info("No data to migrate");
+      }
+      return;
+    }
+
+    const migratedData = await this.#migrationManager.migrate(rawData);
+
+    await this.#storageManager.store(
+      this.#storageKey,
+      this.#storageLocation,
+      migratedData
+    );
+
+    if (this.loggingEnabled) {
+      this.#errorHandler.info(
+        `Migration complete: v${this.#migrationManager.getDataVersion(
+          rawData
+        )} → v${this.#migrationManager.getCurrentVersion()}`
+      );
+    }
+  }
+
+  /**
+   * Check if data migration is needed
+   * Compares current data version with configured version
+   *
+   * @returns true if migration is needed
+   *
+   * @example
+   * if (await context.needsMigration()) {
+   *   console.log("Data will be migrated on next retrieve");
+   * }
+   */
+  async needsMigration(): Promise<boolean> {
+    if (!this.#migrationManager) {
+      return false;
+    }
+
+    const rawData = await this.#storageManager.retrieve<any>(
+      this.#storageKey,
+      this.#storageLocation
+    );
+
+    if (!rawData || (Array.isArray(rawData) && rawData.length === 0)) {
+      return false;
+    }
+
+    return this.#migrationManager.needsMigration(rawData);
+  }
+
+  /**
+   * Get the current data version
+   * Returns the version number of stored data
+   *
+   * @returns Version number (1 for unversioned data)
+   *
+   * @example
+   * const version = await context.getDataVersion();
+   * console.log(`Data is at version ${version}`);
+   */
+  async getDataVersion(): Promise<number> {
+    if (!this.#migrationManager) {
+      return 1;
+    }
+
+    const rawData = await this.#storageManager.retrieve<any>(
+      this.#storageKey,
+      this.#storageLocation
+    );
+
+    if (!rawData || (Array.isArray(rawData) && rawData.length === 0)) {
+      return 1;
+    }
+
+    return this.#migrationManager.getDataVersion(rawData);
+  }
+
+  /**
+   * Initialize migration manager with configuration
+   * @private
+   */
+  #initializeMigrationManager(config: DataContextConfig): void {
+    // Dynamic import to avoid circular dependency
+    import("../migration/MigrationManager.js").then(({ MigrationManager }) => {
+      this.#migrationManager = new MigrationManager(config);
+
+      if (this.loggingEnabled) {
+        this.#errorHandler.info(
+          `Migration manager initialized for version ${config.version || 1}`
+        );
+      }
+    });
   }
 }

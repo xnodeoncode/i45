@@ -4,10 +4,11 @@
  */
 
 import type { IStorageService } from "../services/base/IStorageService";
-import type { StorageLocation } from "../models/storageLocations";
-import { StorageLocations } from "../models/storageLocations";
+import type { StorageLocation } from "../models/StorageLocations";
+import { StorageLocations } from "../models/StorageLocations";
 import { LocalStorageService } from "../services/LocalStorageService";
 import { SessionStorageService } from "../services/SessionStorageService";
+import { IndexedDBService } from "../services/IndexedDBService";
 import { ValidationUtils } from "../utils/ValidationUtils";
 import { ErrorHandler } from "../utils/ErrorHandler";
 
@@ -17,11 +18,13 @@ import { ErrorHandler } from "../utils/ErrorHandler";
 export class StorageManager {
   private localStorageService: IStorageService;
   private sessionStorageService: IStorageService;
+  private indexedDBService: IStorageService;
   private errorHandler: ErrorHandler;
 
   constructor(errorHandler: ErrorHandler) {
     this.localStorageService = new LocalStorageService();
     this.sessionStorageService = new SessionStorageService();
+    this.indexedDBService = new IndexedDBService();
     this.errorHandler = errorHandler;
   }
 
@@ -34,6 +37,8 @@ export class StorageManager {
         return this.localStorageService;
       case StorageLocations.SessionStorage:
         return this.sessionStorageService;
+      case StorageLocations.IndexedDB:
+        return this.indexedDBService;
       default:
         ValidationUtils.validateStorageLocation(location);
         return this.localStorageService; // This will never be reached due to validation
@@ -44,25 +49,30 @@ export class StorageManager {
    * Store items in storage
    * @param key - Storage key
    * @param location - Storage location
-   * @param items - Items to store
+   * @param data - Data to store (array of items or metadata object)
    */
   async store<T = any>(
     key: string,
     location: StorageLocation,
-    items: T[]
+    data: T[] | any
   ): Promise<void> {
     ValidationUtils.validateStorageKey(key);
     ValidationUtils.validateStorageLocation(location);
-    ValidationUtils.validateArray(items);
+
+    // Only validate as array if it is an array
+    if (Array.isArray(data)) {
+      ValidationUtils.validateArray(data);
+    }
 
     const service = this.getService(location);
-    const serialized = JSON.stringify(items);
-    service.save(key, serialized);
+    const serialized = JSON.stringify(data);
+    await service.save(key, serialized);
 
+    const itemCount = Array.isArray(data) ? data.length : data.itemCount ?? 0;
     this.errorHandler.info(`Data stored as ${key} in ${location}`, {
       key,
       location,
-      itemCount: items.length,
+      itemCount,
     });
   }
 
@@ -70,30 +80,31 @@ export class StorageManager {
    * Retrieve items from storage
    * @param key - Storage key
    * @param location - Storage location
-   * @returns Retrieved items or empty array
+   * @returns Retrieved data (array or metadata object) or null
    */
   async retrieve<T = any>(
     key: string,
     location: StorageLocation
-  ): Promise<T[]> {
+  ): Promise<T[] | any> {
     ValidationUtils.validateStorageKey(key);
     ValidationUtils.validateStorageLocation(location);
 
     const service = this.getService(location);
-    const result = service.retrieve(key);
+    const result = await service.retrieve(key);
 
     if (!result) {
-      return [];
+      return null;
     }
 
     try {
-      const items = JSON.parse(result.value);
+      const data = JSON.parse(result.value);
+      const itemCount = Array.isArray(data) ? data.length : data.itemCount ?? 0;
       this.errorHandler.info(`Retrieved data as ${key} from ${location}`, {
         key,
         location,
-        itemCount: items.length,
+        itemCount,
       });
-      return items;
+      return data;
     } catch (error) {
       this.errorHandler.handleRetrievalError(
         key,
@@ -102,7 +113,7 @@ export class StorageManager {
           ? "Local Storage"
           : "Session Storage"
       );
-      return [];
+      return null;
     }
   }
 
@@ -116,7 +127,7 @@ export class StorageManager {
     ValidationUtils.validateStorageLocation(location);
 
     const service = this.getService(location);
-    service.remove(key);
+    await service.remove(key);
 
     this.errorHandler.info(`Removed data ${key} from ${location}`, {
       key,
@@ -132,7 +143,7 @@ export class StorageManager {
     ValidationUtils.validateStorageLocation(location);
 
     const service = this.getService(location);
-    service.clear();
+    await service.clear();
 
     this.errorHandler.info(`Cleared all data from ${location}`, { location });
   }

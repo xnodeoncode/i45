@@ -17,18 +17,21 @@ A powerful, type-safe wrapper for browser storage (localStorage and sessionStora
 - ✨ **Full TypeScript support** with generic types: `DataContext<T>`
 - 🔒 **Type-safe operations** - catch errors at compile time
 - 🏗️ **Modern architecture** - modular design with service orchestration
+- � **Three storage options** - localStorage, sessionStorage, and IndexedDB (~50MB+)
+- ⏱️ **Automatic timestamp tracking** - transparent metadata with createdAt, updatedAt, version
+- 🔄 **Time-based patterns** - sync-since-timestamp, cache freshness, conflict resolution- 🔗 **Cross-tab synchronization** (v3.2.0+) - automatic data sync between browser tabs- 💾 **Storage quota checking** - monitor capacity and usage across storage types
 - 📦 **Simple API** - config object pattern or legacy constructor
 - 🎯 **Zero code duplication** - 300+ lines eliminated through refactoring
 - ✅ **Comprehensive validation** - centralized with `ValidationUtils`
 - 🚨 **6 custom error classes** - specific, actionable error handling
 - 🪵 **Built-in logging** via [i45-jslogger](https://www.npmjs.com/package/i45-jslogger)
-- 🧪 **Well tested** - 172 tests with 92% coverage
+- 🧪 **Well tested** - 272 tests with excellent coverage
 - 🎯 **Zero dependencies** (except i45-jslogger and i45-sample-data)
 - 📝 **Sample data included** via [i45-sample-data](https://www.npmjs.com/package/i45-sample-data)
 - 🌳 **Tree-shakeable** ESM build
 - 📖 **Comprehensive type definitions** (.d.ts)
 
-**📚 Documentation:** [Migration Guide](./docs/MIGRATION.md) | [API Reference](./docs/API.md) | [TypeScript Guide](./docs/TYPESCRIPT.md) | [Examples](./docs/EXAMPLES.md)
+**📚 Documentation:** [Migration Guide](./docs/migration.md) | [API Reference](./docs/api.md) | [TypeScript Guide](./docs/typescript.md) | [Examples](./docs/examples.md) | [Offline Sync Guide](./docs/offline-sync.md) | [Cross-Tab Sync Guide](./docs/cross-tab-sync.md)
 
 ## Installation
 
@@ -54,6 +57,7 @@ interface User {
 const context = new DataContext<User>({
   storageKey: "Users",
   storageLocation: StorageLocations.LocalStorage,
+  trackTimestamps: true, // Automatic metadata (default: true)
   loggingEnabled: true,
   logger: new Logger(),
 });
@@ -73,9 +77,13 @@ await context.store([
 // Retrieve data (returns User[])
 const users = await context.retrieve();
 console.log(users);
+
+// Get metadata (timestamps, version, count)
+const metadata = await context.getMetadata();
+console.log(`Created: ${metadata.createdAt}, Version: ${metadata.version}`);
 ```
 
-📖 **More examples:** [EXAMPLES.md](./docs/EXAMPLES.md) | [TypeScript Guide](./docs/TYPESCRIPT.md)
+📖 **More examples:** [examples.md](./docs/examples.md) | [TypeScript Guide](./docs/typescript.md)
 
 ### JavaScript
 
@@ -98,7 +106,7 @@ console.log("Astronomy terms:", data);
 
 i45 v3.0.0 features a completely refactored, modular architecture (December 2025).
 
-📖 **See also:** [Migration Guide - Architecture](./docs/MIGRATION.md#new-architecture) | [API Reference](./docs/API.md)
+📖 **See also:** [Migration Guide - Architecture](./docs/migration.md#new-architecture) | [API Reference](./docs/api.md)
 
 ```
 /src
@@ -151,7 +159,7 @@ i45 v3.0.0 features a completely refactored, modular architecture (December 2025
 
 i45 v3.0 is built with TypeScript and provides full type safety.
 
-📖 **See [TYPESCRIPT.md](./docs/TYPESCRIPT.md) for comprehensive TypeScript usage guide**
+📖 **See [typescript.md](./docs/typescript.md) for comprehensive TypeScript usage guide**
 
 ```typescript
 import { DataContext, StorageLocations, type StorageItem } from "i45";
@@ -336,8 +344,9 @@ StorageLocations is an enum of available storage options:
 import { StorageLocations } from "i45";
 
 // Available options
-StorageLocations.LocalStorage; // Uses window.localStorage (default)
-StorageLocations.SessionStorage; // Uses window.sessionStorage
+StorageLocations.LocalStorage; // Uses window.localStorage (default, ~5-10MB)
+StorageLocations.SessionStorage; // Uses window.sessionStorage (~5-10MB)
+StorageLocations.IndexedDB; // Uses IndexedDB (~50MB+, async database)
 ```
 
 #### Using StorageLocations
@@ -350,6 +359,12 @@ const context = new DataContext("MyItems", StorageLocations.SessionStorage);
 
 // Or use properties
 context.storageLocation = StorageLocations.LocalStorage;
+
+// Use IndexedDB for larger datasets
+const largeDataContext = new DataContext({
+  storageKey: "LargeDataset",
+  storageLocation: StorageLocations.IndexedDB,
+});
 ```
 
 ### Using Sample Data
@@ -372,7 +387,7 @@ console.log(books);
 
 i45 integrates [i45-jslogger](https://www.npmjs.com/package/i45-jslogger) for comprehensive logging support.
 
-📖 **See also:** [EXAMPLES.md - Custom Logger](./docs/EXAMPLES.md#custom-logger)
+📖 **See also:** [examples.md - Custom Logger](./docs/examples.md#custom-logger)
 
 #### Built-In Logging
 
@@ -414,7 +429,7 @@ context.addClient(apiLogger);
 
 ## API Reference
 
-📖 **Complete API documentation:** [API.md](./docs/API.md)
+📖 **Complete API documentation:** [api.md](./docs/api.md)
 
 ### DataContext<T>
 
@@ -512,7 +527,7 @@ export interface DatabaseSettings {
 
 v3.0.0 provides 6 custom error classes for specific error handling.
 
-📖 **Full error documentation:** [API.md - Error Classes](./docs/API.md#error-classes) | [Examples](./docs/EXAMPLES.md#error-handling)
+📖 **Full error documentation:** [api.md - Error Classes](./docs/api.md#error-classes) | [Examples](./docs/examples.md#error-handling)
 
 ```typescript
 import {
@@ -546,7 +561,7 @@ try {
 
 ## Migration from v2.x
 
-v3.0.0 includes breaking changes and major architectural improvements. See [MIGRATION.md](./docs/MIGRATION.md) for the complete migration guide.
+v3.0.0 includes breaking changes and major architectural improvements. See [migration.md](./docs/migration.md) for the complete migration guide.
 
 ### Key Changes
 
@@ -580,7 +595,7 @@ const context = new DataContext("MyData");
 await context.store(data); // Always async
 ```
 
-For detailed migration steps, error handling examples, and troubleshooting, see [MIGRATION.md](./docs/MIGRATION.md).
+For detailed migration steps, error handling examples, and troubleshooting, see [migration.md](./docs/migration.md).
 
 ## Browser Support
 
@@ -596,19 +611,20 @@ For detailed migration steps, error handling examples, and troubleshooting, see 
 
 ## Framework Integration
 
-- **React:** See [EXAMPLES.md - React Integration](./docs/EXAMPLES.md#react-integration)
-- **Vue:** See [EXAMPLES.md - Vue Integration](./docs/EXAMPLES.md#vue-integration)
-- **TypeScript:** See [TYPESCRIPT.md](./docs/TYPESCRIPT.md) for type-safe integration patterns
+- **React:** See [examples.md - React Integration](./docs/examples.md#react-integration)
+- **Vue:** See [examples.md - Vue Integration](./docs/examples.md#vue-integration)
+- **TypeScript:** See [typescript.md](./docs/typescript.md) for type-safe integration patterns
 
 ## Testing
 
 i45 v3.0.0 includes comprehensive testing:
 
-- **172 tests** with Jest
-- **92.08% statement coverage**
-- Unit tests for all components
+- **205 tests** with Jest
+- **91.7% statement coverage**
+- Unit tests for all components including IndexedDBService
 - Type safety tests
 - Error handling tests
+- Browser storage mocking with fake-indexeddb
 
 ```bash
 # Run tests
@@ -621,21 +637,22 @@ npm run test:coverage
 npm run test:watch
 ```
 
-📖 **Testing examples:** [EXAMPLES.md - Testing Examples](./docs/EXAMPLES.md#testing-examples)
+📖 **Testing examples:** [examples.md - Testing Examples](./docs/examples.md#testing-examples)
 
 ## Documentation
 
 ### Core Documentation
 
 - **[README.md](./README.md)** - This file (getting started and quick reference)
-- **[API.md](./docs/API.md)** - Complete API reference with all methods, properties, and error classes
-- **[TYPESCRIPT.md](./docs/TYPESCRIPT.md)** - TypeScript usage guide with patterns and best practices
-- **[EXAMPLES.md](./docs/EXAMPLES.md)** - 20+ comprehensive examples including React/Vue integration
-- **[MIGRATION.md](./docs/MIGRATION.md)** - Complete v2.x → v3.x migration guide
+- **[api.md](./docs/api.md)** - Complete API reference with all methods, properties, and error classes
+- **[typescript.md](./docs/typescript.md)** - TypeScript usage guide with patterns and best practices
+- **[examples.md](./docs/examples.md)** - 20+ comprehensive examples including React/Vue integration
+- **[offline-sync.md](./docs/offline-sync.md)** - Comprehensive offline sync patterns, conflict resolution, and queue management
+- **[migration.md](./docs/migration.md)** - Complete v2.x → v3.x migration guide
 
 ### Additional Resources
 
-- **[CHANGES.md](./CHANGES.md)** - Version history and changelog
+- **[revisions.md](./docs/revisions.md)** - Version history and changelog
 - **[REFACTORING-SUMMARY.md](../../../Documents/Orion/Projects/i45/REFACTORING-SUMMARY.md)** - December 2025 refactoring details
 
 ## License
@@ -656,4 +673,4 @@ Contributions are welcome! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for g
 
 ## Changelog
 
-See [CHANGES.md](./CHANGES.md) for version history and release notes.
+See [revisions.md](./docs/revisions.md) for version history and release notes.

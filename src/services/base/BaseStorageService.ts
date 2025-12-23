@@ -3,7 +3,7 @@
  * Abstract base class providing common functionality for all storage implementations
  */
 
-import type { StorageItem } from "../../models/storageItem";
+import type { StorageItem } from "../../models/StorageItem";
 import type { IStorageService } from "./IStorageService";
 import { PersistenceServiceNotEnabled } from "../../errors/PersistenceServiceNotEnabled";
 
@@ -29,22 +29,22 @@ export abstract class BaseStorageService implements IStorageService {
   /**
    * Save a storage item
    */
-  abstract save(key: string, value: string): void;
+  abstract save(key: string, value: string): Promise<void>;
 
   /**
    * Retrieve a storage item
    */
-  abstract retrieve(key: string): StorageItem | null;
+  abstract retrieve(key: string): Promise<StorageItem | null>;
 
   /**
    * Remove a storage item
    */
-  abstract remove(key: string): void;
+  abstract remove(key: string): Promise<void>;
 
   /**
    * Clear all items
    */
-  abstract clear(): void;
+  abstract clear(): Promise<void>;
 
   /**
    * Check if storage type is available

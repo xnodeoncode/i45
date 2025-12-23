@@ -1,5 +1,166 @@
 # i45 Revisions
 
+## v3.1.0
+
+### December 22, 2025
+
+**New Features:**
+
+- **Timestamp Tracking**: Automatic metadata tracking for stored data
+
+  - `StorageMetadata<T>` interface with createdAt, updatedAt, version, and itemCount
+  - Transparent wrapping/unwrapping - users work with plain arrays
+  - Configurable via `trackTimestamps` option (default: true, opt-out available)
+  - New methods: `getMetadata()`, `getMetadataFrom()`, `getMetadataAt()`
+  - Helper functions: `isModifiedSince()`, `isStale()`, `getAge()` for time-based patterns
+  - Version tracking with auto-increment for conflict resolution
+  - Enables sync-since-timestamp, cache freshness, and conflict resolution patterns
+
+- **Storage Quota Checking**: Added methods to check storage capacity and usage
+  - `getRemainingStorage()`: Get overall storage quota using Storage API
+  - `getStorageInfo(location?)`: Get quota info for specific storage location
+  - New `StorageInfo` interface with quota/usage/remaining/percentUsed details
+  - Helper functions: `formatBytes()` and `formatStorageInfo()` for display
+  - Supports IndexedDB (via Storage API) and Web Storage (estimated limits)
+
+**Improvements:**
+
+- Applications can track when data was created and last modified
+- Time-based synchronization patterns now possible with metadata timestamps
+- Cache freshness checking with age-based validation
+- Version-based conflict resolution for concurrent updates
+- Non-breaking: existing code works without changes, metadata is transparent
+- Applications can now check available storage before operations
+- Graceful handling for browsers without Storage API support
+- Web Storage quota estimation (10MB typical limit)
+- Accurate IndexedDB quota via `navigator.storage.estimate()`
+
+**Testing:**
+
+- 47 new comprehensive tests for timestamp tracking functionality
+- 24 new comprehensive tests for storage quota functionality
+- Total test count increased from 205 to 272 tests
+- All metadata tracking scenarios covered (wrapping, unwrapping, helpers)
+- All quota checking scenarios covered (API support, edge cases, integration)
+
+**Files Added:**
+
+- `src/models/StorageMetadata.ts`: Metadata interface and 7 utility functions
+- `src/models/DataContextConfig.ts`: Enhanced configuration with trackTimestamps
+- `tests/metadata.test.ts`: 47 comprehensive tests
+- `src/models/StorageInfo.ts`: Interface and utility functions
+- `tests/storageQuota.test.ts`: 24 comprehensive tests
+- `examples/storage-quota-example.ts`: 5 usage examples
+
+**Files Modified:**
+
+- `src/core/DataContext.ts`: Added metadata wrapping/unwrapping and quota checking methods
+- `src/core/StorageManager.ts`: Updated to handle metadata objects
+- `src/index.ts`: Export StorageMetadata, StorageInfo types and utilities
+- `tests/dataContext.test.ts`: Updated tests for metadata structure
+
+**Example Usage:**
+
+```typescript
+// Timestamp Tracking (automatic by default)
+const context = new DataContext({
+  storageKey: "books",
+  trackTimestamps: true, // Default, can set false to disable
+});
+
+// Store data - metadata added automatically
+await context.store([{ id: 1, title: "Book 1" }]);
+
+// Retrieve unwrapped items
+const items = await context.retrieve(); // [{ id: 1, title: "Book 1" }]
+
+// Get metadata separately
+const metadata = await context.getMetadata();
+console.log(metadata);
+// {
+//   createdAt: "2025-12-22T20:28:43.891Z",
+//   updatedAt: "2025-12-22T20:28:43.891Z",
+//   itemCount: 1,
+//   version: 1
+// }
+
+// Use helper functions for time-based patterns
+import { isModifiedSince, isStale, getAge } from "i45";
+
+if (isModifiedSince(metadata, lastSyncTime)) {
+  console.log("Data modified, sync needed");
+}
+
+if (isStale(metadata, 5 * 60 * 1000)) {
+  console.log("Cache is stale (>5 minutes old)");
+}
+
+const ageMs = getAge(metadata);
+console.log(`Data age: ${Math.floor(ageMs / 1000)}s`);
+
+// Storage Quota Checking
+const info = await context.getRemainingStorage();
+console.log(`${info.percentUsed}% used, ${info.remaining} bytes remaining`);
+
+const localInfo = await context.getStorageInfo(StorageLocations.LocalStorage);
+if (localInfo.percentUsed > 80) {
+  console.warn("Storage is running low!");
+}
+```
+
+---
+
+## v3.0.1
+
+### December 22, 2025
+
+**New Features:**
+
+- **IndexedDB Support**: Added `IndexedDBService` for large dataset storage (~50MB+ capacity)
+  - Asynchronous storage operations with proper transaction management
+  - Database: "i45Storage" with object store "items"
+  - Supports all standard CRUD operations (save, retrieve, remove, clear)
+  - `close()` method for connection cleanup
+- **Async-First Interface**: All storage services now use async/await pattern
+  - `IStorageService` interface updated to return `Promise<T>` for all operations
+  - Consistent async API across localStorage, sessionStorage, and IndexedDB
+  - Backward compatible at DataContext API level (was already async)
+
+**Improvements:**
+
+- Fixed empty string handling in IndexedDBService retrieval
+- Added `structuredClone` polyfill for test environment compatibility
+- Enhanced error handling for falsy values in storage retrieval
+
+**Testing:**
+
+- 32 new comprehensive tests for IndexedDBService
+- Total test count increased from 173 to 205 tests
+- IndexedDBService coverage: 89.61% statements, 91.3% branches
+- All tests passing with `fake-indexeddb` for test environment
+
+**Storage Locations:**
+
+```typescript
+enum StorageLocations {
+  SessionStorage = "sessionStorage",
+  LocalStorage = "localStorage",
+  IndexedDB = "indexedDB", // NEW
+}
+```
+
+**Dependencies:**
+
+- Added `fake-indexeddb` as dev dependency for testing
+
+**Files Changed:**
+
+- New: `src/services/IndexedDBService.ts` (174 lines)
+- New: `tests/indexedDBService.test.ts` (32 tests)
+- Modified: All storage service interfaces to async
+- Modified: `StorageLocations` enum to include IndexedDB
+- Modified: Test setup for structuredClone polyfill
+
 ## v3.0.0-alpha.1
 
 ### December 19, 2025

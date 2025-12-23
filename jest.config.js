@@ -31,7 +31,6 @@ export default {
     "!src/index.ts",
     "!src/@types/**",
     "!src/services/cookieService.ts", // Not yet integrated
-    "!src/services/indexedDBService.ts", // Not yet integrated
   ],
   coverageDirectory: "coverage",
   coverageReporters: ["text", "lcov", "html", "json-summary"],

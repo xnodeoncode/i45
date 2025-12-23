@@ -3,7 +3,7 @@
  * Wrapper for browser localStorage API
  */
 
-import { StorageItem, createStorageItem } from "../models/storageItem";
+import { StorageItem, createStorageItem } from "../models/StorageItem";
 import { BaseStorageService } from "./base/BaseStorageService";
 
 /**
@@ -25,7 +25,7 @@ export class LocalStorageService extends BaseStorageService {
   /**
    * Save an item to localStorage
    */
-  save(key: string, value: string): void {
+  async save(key: string, value: string): Promise<void> {
     this.throwIfUnavailable();
     const storage = this.getStorage();
     if (storage) {
@@ -36,7 +36,7 @@ export class LocalStorageService extends BaseStorageService {
   /**
    * Retrieve an item from localStorage
    */
-  retrieve(key: string): StorageItem | null {
+  async retrieve(key: string): Promise<StorageItem | null> {
     this.throwIfUnavailable();
 
     if (!key || key.length === 0) {
@@ -59,7 +59,7 @@ export class LocalStorageService extends BaseStorageService {
   /**
    * Remove an item from localStorage
    */
-  remove(key: string): void {
+  async remove(key: string): Promise<void> {
     this.throwIfUnavailable();
 
     if (key && key.length > 0) {
@@ -73,7 +73,7 @@ export class LocalStorageService extends BaseStorageService {
   /**
    * Clear all items from localStorage
    */
-  clear(): void {
+  async clear(): Promise<void> {
     this.throwIfUnavailable();
     const storage = this.getStorage();
     if (storage) {

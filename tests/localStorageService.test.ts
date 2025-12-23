@@ -14,85 +14,85 @@ describe("LocalStorageService", () => {
   });
 
   describe("save()", () => {
-    it("should save a single item", () => {
-      service.save("testKey", "testValue");
+    it("should save a single item", async () => {
+      await service.save("testKey", "testValue");
       expect(localStorage.getItem("testKey")).toBe("testValue");
     });
 
-    it("should save multiple items", () => {
-      service.save("key1", "value1");
-      service.save("key2", "value2");
-      service.save("key3", "value3");
+    it("should save multiple items", async () => {
+      await service.save("key1", "value1");
+      await service.save("key2", "value2");
+      await service.save("key3", "value3");
 
       expect(localStorage.getItem("key1")).toBe("value1");
       expect(localStorage.getItem("key2")).toBe("value2");
       expect(localStorage.getItem("key3")).toBe("value3");
     });
 
-    it("should overwrite existing items", () => {
-      service.save("key", "oldValue");
-      service.save("key", "newValue");
+    it("should overwrite existing items", async () => {
+      await service.save("key", "oldValue");
+      await service.save("key", "newValue");
       expect(localStorage.getItem("key")).toBe("newValue");
     });
 
-    it("should handle empty string values", () => {
-      service.save("emptyKey", "");
+    it("should handle empty string values", async () => {
+      await service.save("emptyKey", "");
       expect(localStorage.getItem("emptyKey")).toBe("");
     });
 
-    it("should handle unicode values", () => {
-      service.save("unicode", "日本語🚀");
+    it("should handle unicode values", async () => {
+      await service.save("unicode", "日本語🚀");
       expect(localStorage.getItem("unicode")).toBe("日本語🚀");
     });
   });
 
   describe("retrieve()", () => {
-    it("should retrieve a saved item", () => {
+    it("should retrieve a saved item", async () => {
       localStorage.setItem("testKey", "testValue");
-      const item = service.retrieve("testKey");
+      const item = await service.retrieve("testKey");
       expect(item).toEqual({ name: "testKey", value: "testValue" });
     });
 
-    it("should return null for non-existent key", () => {
-      const item = service.retrieve("nonExistent");
+    it("should return null for non-existent key", async () => {
+      const item = await service.retrieve("nonExistent");
       expect(item).toBeNull();
     });
 
-    it("should return null for empty key", () => {
-      const item = service.retrieve("");
+    it("should return null for empty key", async () => {
+      const item = await service.retrieve("");
       expect(item).toBeNull();
     });
   });
 
   describe("remove()", () => {
-    it("should remove an item", () => {
+    it("should remove an item", async () => {
       localStorage.setItem("testKey", "testValue");
-      service.remove("testKey");
+      await service.remove("testKey");
       expect(localStorage.getItem("testKey")).toBeNull();
     });
 
-    it("should not throw error when removing non-existent key", () => {
-      expect(() => service.remove("nonExistent")).not.toThrow();
+    it("should not throw error when removing non-existent key", async () => {
+      await expect(service.remove("nonExistent")).resolves.not.toThrow();
     });
   });
 
   describe("clear()", () => {
-    it("should clear all items", () => {
+    it("should clear all items", async () => {
       localStorage.setItem("key1", "value1");
       localStorage.setItem("key2", "value2");
-      service.clear();
+      await service.clear();
       expect(localStorage.length).toBe(0);
     });
   });
 
   describe("Integration", () => {
-    it("should handle complete lifecycle", () => {
-      service.save("key", "value");
-      const retrieved = service.retrieve("key");
+    it("should handle complete lifecycle", async () => {
+      await service.save("key", "value");
+      const retrieved = await service.retrieve("key");
       expect(retrieved?.value).toBe("value");
 
-      service.remove("key");
-      expect(service.retrieve("key")).toBeNull();
+      await service.remove("key");
+      expect(await service.retrieve("key")).toBeNull();
     });
   });
 });

@@ -674,7 +674,7 @@ After migrating to v3.0.0:
 2. **Enable TypeScript** - Full type safety benefits
 3. **Update tests** - Test with new validation rules
 4. **Monitor storage** - New error classes help catch issues
-5. **Read the docs** - Check [API.md](./API.md) for complete reference
+5. **Read the docs** - Check [api.md](./api.md) for complete reference
 
 ## Need Help?
 
@@ -682,10 +682,10 @@ After migrating to v3.0.0:
 - **Discussions**: https://github.com/xnodeoncode/i45/discussions
 - **Documentation**:
   - [README.md](../README.md) - Getting started
-  - [API.md](./API.md) - Complete API reference
-  - [TYPESCRIPT.md](./TYPESCRIPT.md) - TypeScript usage guide
-  - [EXAMPLES.md](./EXAMPLES.md) - Comprehensive examples
-- **Changelog**: See [CHANGES.md](../CHANGES.md) for detailed version history
+  - [api.md](./api.md) - Complete API reference
+  - [typescript.md](./typescript.md) - TypeScript usage guide
+  - [examples.md](./examples.md) - Comprehensive examples
+- **Changelog**: See [revisions.md](./revisions.md) for detailed version history
 - **Refactoring Details**: See REFACTORING-SUMMARY.md for December 2025 changes
 
 ## Summary
@@ -764,7 +764,7 @@ if (Array.isArray(items) && items.length > 0) {
 
 - **GitHub Issues**: https://github.com/xnodeoncode/i45/issues
 - **Documentation**: See [README.md](../README.md) for complete API documentation
-- **Testing**: See [TESTING.md](./TESTING.md) for test examples
+- **Testing**: See [testing.md](./testing.md) for test examples
 
 ## Summary
 

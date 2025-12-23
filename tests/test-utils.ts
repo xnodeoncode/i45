@@ -3,7 +3,7 @@
  * Helper functions and utilities for testing
  */
 
-import type { StorageItem } from "../src/models/storageItem";
+import type { StorageItem } from "../src/models/StorageItem";
 
 /**
  * Creates mock storage items for testing
@@ -102,7 +102,7 @@ export async function expectToThrow(
   errorType?: new (...args: any[]) => Error,
   messageContains?: string
 ): Promise<void> {
-  let error: Error | null = null;
+  let thrownError: unknown = null;
 
   try {
     const result = fn();
@@ -110,22 +110,32 @@ export async function expectToThrow(
       await result;
     }
   } catch (e) {
-    error = e as Error;
+    thrownError = e;
   }
 
-  if (!error) {
+  if (!thrownError) {
     throw new Error("Expected function to throw an error, but it did not");
   }
 
-  if (errorType && !(error instanceof errorType)) {
+  if (errorType && !(thrownError instanceof errorType)) {
+    const actualErrorName =
+      thrownError &&
+      typeof thrownError === "object" &&
+      "constructor" in thrownError
+        ? (thrownError.constructor as any).name
+        : String(thrownError);
     throw new Error(
-      `Expected error to be instance of ${errorType.name}, but got ${error.constructor.name}`
+      `Expected error to be instance of ${errorType.name}, but got ${actualErrorName}`
     );
   }
 
-  if (messageContains && !error.message.includes(messageContains)) {
-    throw new Error(
-      `Expected error message to contain "${messageContains}", but got "${error.message}"`
-    );
+  if (messageContains) {
+    const errorMessage =
+      thrownError instanceof Error ? thrownError.message : String(thrownError);
+    if (!errorMessage.includes(messageContains)) {
+      throw new Error(
+        `Expected error message to contain "${messageContains}", but got "${errorMessage}"`
+      );
+    }
   }
 }

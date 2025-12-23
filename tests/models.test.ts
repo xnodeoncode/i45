@@ -4,10 +4,10 @@
  */
 
 import { describe, it, expect } from "@jest/globals";
-import { StorageLocations } from "../src/models/storageLocations";
-import type { StorageLocation } from "../src/models/storageLocations";
-import { createStorageItem } from "../src/models/storageItem";
-import type { StorageItem } from "../src/models/storageItem";
+import { StorageLocations } from "../src/models/StorageLocations";
+import type { StorageLocation } from "../src/models/StorageLocations";
+import { createStorageItem } from "../src/models/StorageItem";
+import type { StorageItem } from "../src/models/StorageItem";
 
 describe("StorageLocations", () => {
   describe("Enum Values", () => {
@@ -19,9 +19,13 @@ describe("StorageLocations", () => {
       expect(StorageLocations.LocalStorage).toBe("localStorage");
     });
 
-    it("should only have two storage locations", () => {
+    it("should have IndexedDB value", () => {
+      expect(StorageLocations.IndexedDB).toBe("indexedDB");
+    });
+
+    it("should have three storage locations", () => {
       const values = Object.values(StorageLocations);
-      expect(values).toHaveLength(2);
+      expect(values).toHaveLength(3);
     });
   });
 

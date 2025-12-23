@@ -159,13 +159,24 @@ describe("DataContext", () => {
 
       const stored = localStorage.getItem("TestData");
       expect(stored).not.toBeNull();
-      expect(JSON.parse(stored!)).toEqual(items);
+      const parsed = JSON.parse(stored!);
+      // Check metadata wrapper structure
+      expect(parsed).toHaveProperty("items");
+      expect(parsed).toHaveProperty("createdAt");
+      expect(parsed).toHaveProperty("updatedAt");
+      expect(parsed).toHaveProperty("itemCount", 3);
+      expect(parsed).toHaveProperty("version");
+      expect(parsed.items).toEqual(items);
     });
 
     it("should store empty array", async () => {
       await context.store([]);
       const stored = localStorage.getItem("TestData");
-      expect(JSON.parse(stored!)).toEqual([]);
+      const parsed = JSON.parse(stored!);
+      expect(parsed).toHaveProperty("items");
+      expect(parsed).toHaveProperty("itemCount", 0);
+      expect(parsed).toHaveProperty("version");
+      expect(parsed.items).toEqual([]);
     });
 
     it("should store typed data", async () => {
@@ -181,7 +192,10 @@ describe("DataContext", () => {
 
       await userContext.store(users);
       const stored = localStorage.getItem("Users");
-      expect(JSON.parse(stored!)).toEqual(users);
+      const parsed = JSON.parse(stored!);
+      expect(parsed).toHaveProperty("items");
+      expect(parsed).toHaveProperty("version");
+      expect(parsed.items).toEqual(users);
     });
 
     it("should throw error for non-array items", async () => {
@@ -206,7 +220,11 @@ describe("DataContext", () => {
       await context.store(items2);
 
       const stored = localStorage.getItem("TestData");
-      expect(JSON.parse(stored!)).toEqual(items2);
+      const parsed = JSON.parse(stored!);
+      expect(parsed).toHaveProperty("items");
+      expect(parsed).toHaveProperty("version", 2);
+      expect(parsed).toHaveProperty("updatedAt");
+      expect(parsed.items).toEqual(items2);
     });
   });
 
@@ -220,7 +238,10 @@ describe("DataContext", () => {
       await context.storeAs("CustomKey", items);
 
       const stored = localStorage.getItem("CustomKey");
-      expect(JSON.parse(stored!)).toEqual(items);
+      const parsed = JSON.parse(stored!);
+      expect(parsed).toHaveProperty("items");
+      expect(parsed).toHaveProperty("version");
+      expect(parsed.items).toEqual(items);
     });
 
     it("should not affect default storage key", async () => {
@@ -233,8 +254,12 @@ describe("DataContext", () => {
       const defaultStored = localStorage.getItem("Items");
       const customStored = localStorage.getItem("CustomKey");
 
-      expect(JSON.parse(defaultStored!)).toEqual(items1);
-      expect(JSON.parse(customStored!)).toEqual(items2);
+      const defaultParsed = JSON.parse(defaultStored!);
+      const customParsed = JSON.parse(customStored!);
+      expect(defaultParsed).toHaveProperty("items");
+      expect(customParsed).toHaveProperty("items");
+      expect(defaultParsed.items).toEqual(items1);
+      expect(customParsed.items).toEqual(items2);
     });
 
     it("should throw error for invalid key", async () => {
@@ -257,7 +282,10 @@ describe("DataContext", () => {
       );
 
       const stored = sessionStorage.getItem("SessionData");
-      expect(JSON.parse(stored!)).toEqual(items);
+      const parsed = JSON.parse(stored!);
+      expect(parsed).toHaveProperty("items");
+      expect(parsed).toHaveProperty("version");
+      expect(parsed.items).toEqual(items);
       expect(localStorage.getItem("SessionData")).toBeNull();
     });
 
@@ -266,7 +294,10 @@ describe("DataContext", () => {
       await context.storeAt("LocalData", StorageLocations.LocalStorage, items);
 
       const stored = localStorage.getItem("LocalData");
-      expect(JSON.parse(stored!)).toEqual(items);
+      const parsed = JSON.parse(stored!);
+      expect(parsed).toHaveProperty("items");
+      expect(parsed).toHaveProperty("version");
+      expect(parsed.items).toEqual(items);
       expect(sessionStorage.getItem("LocalData")).toBeNull();
     });
 

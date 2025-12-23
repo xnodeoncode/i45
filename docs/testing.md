@@ -15,10 +15,18 @@ Comprehensive test suite has been implemented for the i45 library using Jest and
 
 ### Overall Results
 
-- **Total Tests:** 118
-- **Passing:** 110 (93.2%)
-- **Failing:** 8 (6.8%)
-- **Test Suites:** 4 (3 passing, 1 with expected failures)
+- **Total Tests:** 205
+- **Passing:** 205 (100%)
+- **Failing:** 0 (0%)
+- **Test Suites:** 6 (all passing)
+
+### Recent Updates (v3.0.1 - December 22, 2025)
+
+- Added 32 comprehensive tests for IndexedDBService
+- Added `fake-indexeddb` for IndexedDB testing in Node.js environment
+- Added `structuredClone` polyfill for test compatibility
+- Fixed empty string handling in IndexedDBService retrieval
+- All 205 tests now passing
 
 ### Code Coverage
 
@@ -108,10 +116,35 @@ Comprehensive test suite has been implemented for the i45 library using Jest and
 
 **Test Categories:**
 
-- StorageLocations enum - 8 tests
+- StorageLocations enum - 9 tests (includes IndexedDB)
 - StorageItem interface - 18 tests
 - createStorageItem() function - 5 tests
 - Model Integration - 3 tests
+
+### 4. IndexedDBService Tests ✅
+
+**File:** `tests/indexedDBService.test.ts`  
+**Status:** All Passing (32/32)  
+**Coverage:** 89.61% statements, 91.3% branches
+
+**Test Categories:**
+
+- Availability - 1 test
+- save() - 7 tests (including empty strings, unicode, large values)
+- retrieve() - 4 tests (saved items, non-existent keys, JSON strings)
+- remove() - 4 tests (item removal, error handling)
+- clear() - 2 tests (clearing items, empty database)
+- close() - 3 tests (connection management)
+- Integration - 3 tests (lifecycle, persistence across instances)
+- Edge Cases - 4 tests (special characters, concurrent operations)
+- Storage Isolation - 3 tests (localStorage/sessionStorage isolation)
+- Error Handling - 2 tests (operations after clear/remove)
+
+**Testing Infrastructure:**
+
+- Uses `fake-indexeddb` for Node.js test environment
+- Custom `structuredClone` polyfill for older Node versions
+- Proper cleanup with `afterEach` hooks
 
 ### 4. DataContext Tests 🟡
 

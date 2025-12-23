@@ -3,7 +3,7 @@
  * Shared validation logic for storage operations
  */
 
-import { StorageLocations, StorageLocation } from "../models/storageLocations";
+import { StorageLocations, StorageLocation } from "../models/StorageLocations";
 import { StorageKeyError } from "../errors/StorageKeyError";
 import { StorageLocationError } from "../errors/StorageLocationError";
 

@@ -3,8 +3,8 @@
  * NOTE: Not yet integrated into DataContext - planned for future release
  */
 
-import type { StorageItem } from "../models/storageItem";
-import { createStorageItem } from "../models/storageItem";
+import type { StorageItem } from "../models/StorageItem";
+import { createStorageItem } from "../models/StorageItem";
 
 /**
  * Cookie options for setting cookies
